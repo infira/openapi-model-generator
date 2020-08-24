@@ -60,3 +60,9 @@ domainTestDb[oakley]=d79590_tstoak
 domainLocalDb[oakley]=gws_oakley
 domainFullName[oakley]=oakstore
 localDomainName[oakley]=oakley
+
+domainLiveDb[intra]=d79590_livint
+domainTestDb[intra]=d79590_tstint
+domainLocalDb[intra]=gws_intra
+domainFullName[intra]=intra
+localDomainName[intra]=intra
