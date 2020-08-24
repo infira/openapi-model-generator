@@ -23,7 +23,7 @@ domainLiveDb[garmin]=d79590_lvgrm
 domainTestDb[garmin]=d79590_tstgrm
 domainLocalDb[garmin]=gws_garmin
 domainFullName[garmin]=garmineesti
-localDomainName[garmin]=gamrin
+localDomainName[garmin]=garmin
 
 domainLiveDb[gopro]=d79590_lvgpr
 domainTestDb[gopro]=d79590_tstgpr
