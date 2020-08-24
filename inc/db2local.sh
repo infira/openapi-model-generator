@@ -26,6 +26,6 @@ HERE
 if [[ $domain == "intra" ]]; then
 	curl "http://local.gws.intra/index.php?install=db&sub=views"
 else
-	curl "http://local.gws.${domainFullName[$domain]}/?install=db&sub=updates&reset=0"
-	curl "http://local.gws.${domainFullName[$domain]}/?install=db&sub=views"
+	curl "http://local.gws.${localDomainName[$domain]}/?install=db&sub=updates&reset=0"
+	curl "http://local.gws.${localDomainName[$domain]}/?install=db&sub=views"
 fi
