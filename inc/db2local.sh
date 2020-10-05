@@ -21,11 +21,3 @@ ssh -t virt79333@DN-68-92.TLL01.ZONEAS.EU <<HERE
 	rm -f /data01/virt79333/domeenid/www.garmineesti.ee/console/$domain.structure.sql
 	rm -f /data01/virt79333/domeenid/www.garmineesti.ee/console/$domain.data.sql
 HERE
-
-
-if [[ $domain == "intra" ]]; then
-	curl "http://local.gws.intra/index.php?install=db&sub=views"
-else
-	curl "http://local.gws.${localDomainName[$domain]}/?install=db&sub=updates&reset=0"
-	curl "http://local.gws.${localDomainName[$domain]}/?install=db&sub=views"
-fi
