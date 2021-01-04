@@ -62,7 +62,7 @@ domainFullName[oakley]="oakstore"
 localDomainName[oakley]="oakley"
 
 domainLiveDb[intra]="d79590_livint"
-domainBetaDb[intra]="betaint"
+domainBetaDb[intra]="d79590_betaint"
 domainLocalDb[intra]="gws_intra"
 domainFullName[intra]="intra"
 localDomainName[intra]="intra"
