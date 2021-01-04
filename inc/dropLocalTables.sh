@@ -1,13 +1,14 @@
-for table in `echo "show tables" | sudo mysql ${domainLocalDb[$domain]}`;
+declare db=$1
+for table in `echo "show tables" | sudo mysql ${db}`;
 do
-    if [[ ! $table == "Tables_in_${domainLocalDb[$domain]}" ]]; then
+    if [[ ! $table == "Tables_in_${db}" ]]; then
         if [[ $table == "v_"* ]]; then
-          DROP_TABLES_STRING+=" drop view ${domainLocalDb[$domain]}.${table};"
+          DROP_TABLES_STRING+=" drop view ${db}.${table};"
 				else
-					DROP_TABLES_STRING+=" drop table ${domainLocalDb[$domain]}.${table};"
+					DROP_TABLES_STRING+=" drop table ${db}.${table};"
         fi
     fi
 done
-echo $DROP_TABLES_STRING# >> drop.sql
-sudo mysql ${domainLocalDb[$domain]} < drop.sql
+echo $DROP_TABLES_STRING >> drop.sql
+sudo mysql ${db} < drop.sql
 rm -f drop.sql
