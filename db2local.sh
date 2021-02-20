@@ -12,11 +12,12 @@ cd /Users/gentaliaru/Work/Vagrant/dev/syncedFolder/
 rsync -av --progress virt79333@DN-68-92.TLL01.ZONEAS.EU:/data01/virt79333/domeenid/www.garmineesti.ee/console/*.sql ./
 
 ssh -t vagrant@192.168.33.10 <<HERE
-	cd ~/sharedFolder/gws_console/
+	cd ~/syncedFolder/gws_console/
 	bash inc/dropLocalTables.sh $localDB
-	sudo mysql $localDB  < ~/sharedFolder/$liveDB.structure.sql
-	sudo mysql $localDB  < ~/sharedFolder/$liveDB.data.sql
+	sudo mysql $localDB < ~/syncedFolder/$liveDB.structure.sql
+	sudo mysql $localDB < ~/syncedFolder/$liveDB.data.sql
 HERE
+
 rm -f /Users/gentaliaru/Work/Vagrant/dev/syncedFolder/$liveDB.structure.sql
 rm -f /Users/gentaliaru/Work/Vagrant/dev/syncedFolder/$liveDB.data.sql
 
