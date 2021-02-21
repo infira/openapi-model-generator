@@ -8,7 +8,7 @@ if [[ -z "$domain" ]]; then
 	error      "\$domain is empty"
 fi
 
-domains=("garmin" "gopro" "meremaailm" "intra" "gps24" "nutistuudio" "gpseesti" "oakley" "garmin_master" "gopro_master" "meremaailm_master" "intra_master" "gps24_master" "master_nutistuudio" "gpseesti_master" "oakley_master")
+domains=("garmin" "gopro" "meremaailm" "intra" "gps24" "nutistuudio" "gpseesti" "oakley" "garmin_master" "gopro_master" "meremaailm_master" "intra_master" "gps24_master" "nutistuudio_master" "gpseesti_master" "oakley_master")
 if [[ ! " ${domains[*]} " == *" $domain "* ]]; then
 	error    "Unknown domain '$domain'"
 fi
@@ -83,10 +83,10 @@ domainLocalDb[meremaailm_master]=gws_master_meremaailm
 domainFullName[meremaailm_master]=meremaailm
 localDomainName[meremaailm_master]=meremaailm
 
-domainLiveDb[master_nutistuudio]=d79590_lvnut
-domainLocalDb[master_nutistuudio]=gws_master_nutistuudio
-domainFullName[master_nutistuudio]=nutistuudio
-localDomainName[master_nutistuudio]=nutistuudio
+domainLiveDb[nutistuudio_master]=d79590_lvnut
+domainLocalDb[nutistuudio_master]=gws_master_nutistuudio
+domainFullName[nutistuudio_master]=nutistuudio
+localDomainName[nutistuudio_master]=nutistuudio
 
 domainLiveDb[gps24_master]=d79590_lvgps24
 domainLocalDb[gps24_master]=gws_master_gps24
