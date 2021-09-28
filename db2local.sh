@@ -15,20 +15,21 @@ ssh -t virt79333@DN-68-92.TLL01.ZONEAS.EU <<HERE
 	bash inc/dumpDb.sh $liveDB
 HERE
 
-cd /Users/gentaliaru/Work/Vagrant/dev/syncedFolder/
-rsync -av --progress virt79333@DN-68-92.TLL01.ZONEAS.EU:/data01/virt79333/domeenid/www.garmineesti.ee/console/*.sql ./
+rsync -av --progress --del virt79333@DN-68-92.TLL01.ZONEAS.EU:/data01/virt79333/domeenid/www.garmineesti.ee/console/*.sql ~/ws/vagrantSyncedFolder
 
 ssh -t vagrant@192.168.33.10 <<HERE
-	cd ~/syncedFolder/gws_console/
+	cd /var/www/git/gws/gws_console/
 	bash inc/dropLocalTables.sh $localDB
-	sudo mysql $localDB < ~/syncedFolder/$liveDB.structure.sql
-	sudo mysql $localDB < ~/syncedFolder/$liveDB.data.sql
+	sudo mysql $localDB < ~/host/$liveDB.structure.sql
+	sudo mysql $localDB < ~/host/$liveDB.data.sql
 HERE
 
-rm -f /Users/gentaliaru/Work/Vagrant/dev/syncedFolder/$liveDB.structure.sql
-rm -f /Users/gentaliaru/Work/Vagrant/dev/syncedFolder/$liveDB.data.sql
+rm -f ~/ws/vagrantSyncedFolder/$liveDB.structure.sql
+rm -f ~/ws/vagrantSyncedFolder/$liveDB.data.sql
 
 ssh -t virt79333@DN-68-92.TLL01.ZONEAS.EU <<HERE
 	rm -f /data01/virt79333/domeenid/www.garmineesti.ee/console/$liveDB.structure.sql
 	rm -f /data01/virt79333/domeenid/www.garmineesti.ee/console/$liveDB.data.sql
 HERE
+
+
