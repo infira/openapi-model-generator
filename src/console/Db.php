@@ -43,7 +43,6 @@ class Db extends Command
 			"sudo mysql $db < $structureFile",
 			"sudo mysql $db < $dataFile",
 		]);
-		debug('$deleteDumpFiles', $structureFile);
 		if ($deleteDumpFiles)
 		{
 			$this->vagrant->execute([
