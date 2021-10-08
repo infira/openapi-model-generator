@@ -6,13 +6,12 @@ use Symfony\Component\Console\Input\InputArgument;
 
 class Db extends \Infira\Klahvik\console\Db
 {
-	use Config;
+	use RemoteConfig;
 	
 	protected ?string $name = 'gws';
 	
 	public function configure(): void
 	{
-		$this->configServers();
 		$this->addArgument('domain', InputArgument::REQUIRED);
 		$this->addArgument('branch', InputArgument::REQUIRED);
 		$this->addOption('local', 'l');
@@ -68,8 +67,8 @@ class Db extends \Infira\Klahvik\console\Db
 		}
 		$liveDB = $databases[$domain];
 		
-		$structurePath = $this->local->klahvikPath("tmp/$liveDB.structure.sql");
-		$dataPath      = $this->local->klahvikPath("tmp/$liveDB.data.sql");
+		$structurePath = $this->local->tmp("$liveDB.structure.sql");
+		$dataPath      = $this->local->tmp("$liveDB.data.sql");
 		if (($fromLocal and (!file_exists($structurePath) or !file_exists($dataPath))) or !$fromLocal)
 		{
 			$this->section("downloading db($liveDB) from remote server", fn() => $this->downloadRemoteDb($liveDB));

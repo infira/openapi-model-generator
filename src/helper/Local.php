@@ -2,19 +2,19 @@
 
 namespace Infira\Klahvik\helper;
 
-use Infira\Utils\Dir;
+use Infira\Klahvik\console\Command;
 
 class Local
 {
-	private ?string $klahvikPath;
+	private Command $cmd;
 	
-	public function setKlahvikPath(string $klahvikPath): void
+	public function __construct(Command &$cmd)
 	{
-		$this->klahvikPath = Dir::fixPath($klahvikPath);
+		$this->cmd = &$cmd;
 	}
 	
-	public function klahvikPath(string $path = ''): string
+	public function tmp(string $path = ''): string
 	{
-		return $this->klahvikPath . $path;
+		return $this->cmd->opt('LOCAL_TMP_PATH') . $path;
 	}
 }

@@ -1,5 +1,6 @@
 #!/bin/bash
 declare db=$1
+declare tempPath=$2
 # shellcheck disable=SC2006
 for table in `echo "show tables" | mysql "${db}"`;
 do
@@ -9,8 +10,8 @@ do
         fi
     fi
 done
-declare structurePath="../tmp/${db}.structure.sql"
-declare dataPath="../tmp/${db}.data.sql"
+declare structurePath="${tempPath}${db}.structure.sql"
+declare dataPath="${tempPath}${db}.data.sql"
 
 echo "Dump ${db} structure"
 mysqldump --add-drop-table --skip-triggers --single-transaction --no-data ${IGNORED_TABLES_STRING} ${db} > ${structurePath}

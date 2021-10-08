@@ -3,23 +3,18 @@
 namespace Infira\Klahvik\console;
 
 
-use Infira\Utils\File;
-
 class Db extends Command
 {
 	protected ?string $namespace = 'db';
 	protected ?string $name      = 'db';
 	
-	/**
-	 * @param string $db
-	 * @param bool   $whenNotExists Download only when dump file doest not exists
-	 */
-	protected function downloadRemoteDb(string $db, bool $whenNotExists = false)
+	protected function downloadRemoteDb(string $db)
 	{
 		$this->info("dumping $db");
-		$this->remote->runKlahvikScript('dumpDb.sh', $db);
+		$tmpPath = $this->remote->tmp();
+		$this->remote->runKlahvikScript('dumpDb.sh', $db . ' "' . $tmpPath . '"');
 		$this->info("downloading $db");
-		$this->remote->downloadFromKlahvik('tmp/*.sql', $this->local->klahvikPath('tmp/'));
+		$this->remote->rsync($this->remote->tmp('*.sql'), $this->local->tmp());
 		$structurePath = $this->remote->klahvikPath("tmp/$db.structure.sql");
 		$dataPath      = $this->remote->klahvikPath("tmp/$db.data.sql");
 		$this->remote->execute([
@@ -38,14 +33,23 @@ class Db extends Command
 		else
 		{
 			$this->info('droping local tables');
-			$this->vagrant->runKlahvikScript("dropLocalTables.sh", $db);
+			$tmpPath = $this->vagrant->tmp();
+			$this->vagrant->runKlahvikScript("dropLocalTables.sh", $db . ' "' . $tmpPath . '"');
 		}
 		$this->info('importing');
-		$this->vagrant->importDb($db, $fromDb, true);
+		$structureFile = $this->vagrant->tmp("$fromDb.structure.sql");
+		$dataFile      = $this->vagrant->tmp("$fromDb.data.sql");
+		$this->vagrant->execute([
+			"sudo mysql $db < $structureFile",
+			"sudo mysql $db < $dataFile",
+		]);
+		debug('$deleteDumpFiles', $structureFile);
 		if ($deleteDumpFiles)
 		{
-			File::delete($this->local->klahvikPath("tmp/$db.structure.sql"));
-			File::delete($this->local->klahvikPath("tmp/$db.data.sql"));
+			$this->vagrant->execute([
+				"sudo rm -f $structureFile",
+				"sudo rm -f $dataFile",
+			]);
 		}
 	}
 }

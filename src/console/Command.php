@@ -9,6 +9,8 @@ use Infira\Klahvik\helper\Server;
 use Infira\Klahvik\helper\Local;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Infira\Klahvik\helper\SymfonyStyle;
+use Infira\Utils\Dir;
+use Infira\Klahvik\helper\DotConfig;
 
 class Command extends \Symfony\Component\Console\Command\Command
 {
@@ -38,14 +40,45 @@ class Command extends \Symfony\Component\Console\Command\Command
 		{
 			parent::__construct("$this->name");
 		}
-		
-		$this->local = new Local();
-		$this->local->setKlahvikPath(KLAHVIK_PATH);
 	}
 	
-	public function configure(): void
+	private function config()
 	{
-		$this->configServers();
+		$configFile = Dir::fixPath($_SERVER['HOME']) . '/.klahvik';
+		$this->opt('LOCAL_TMP_PATH', KLAHVIK_PATH . 'tmp/');
+		if (file_exists($configFile))
+		{
+			$conf = DotConfig::load($configFile);
+			array_walk($conf, fn($value, $name) => $this->opt($name, $value));
+		}
+		$this->configureRemote();
+		$requiredPaths = ['LOCAL_TMP_PATH', 'VAGRANT_KLAHVIK_PATH', 'VAGRANT_TMP_PATH', 'REMOTE_KLAHVIK_PATH', 'REMOTE_TMP_PATH'];
+		foreach ($requiredPaths as $name)
+		{
+			if (!$this->opt($name))
+			{
+				$this->error("config $name is required");
+			}
+			$this->opt($name, Dir::fixPath($this->opt($name)));
+		}
+		$this->local = new Local($this);
+		
+		$this->vagrant = new Server($this, $this->opt('VAGRANT_USER'), $this->opt('VAGRANT_HOST'));
+		$this->vagrant->setKlahvikPath($this->opt('VAGRANT_KLAHVIK_PATH'));
+		$this->vagrant->setTmpPath($this->opt('VAGRANT_TMP_PATH'));
+		
+		
+		if (!$this->opt('REMOTE_USER'))
+		{
+			$this->error('REMOTE_USER is not defined');
+		}
+		if (!$this->opt('REMOTE_HOST'))
+		{
+			$this->error('REMOTE_HOST is not defined');
+		}
+		$this->remote = new Server($this, $this->opt('REMOTE_USER'), $this->opt('REMOTE_HOST'));
+		$this->remote->setKlahvikPath($this->opt('REMOTE_KLAHVIK_PATH'));
+		$this->remote->setTmpPath($this->opt('REMOTE_TMP_PATH'));
 	}
 	
 	/**
@@ -58,6 +91,7 @@ class Command extends \Symfony\Component\Console\Command\Command
 		set_time_limit(7200);
 		$this->output = &$output;
 		$this->input  = &$input;
+		$this->config();
 		$this->beforeExecute();
 		$this->runCommand();
 		$this->afterExecute();
@@ -65,19 +99,7 @@ class Command extends \Symfony\Component\Console\Command\Command
 		return $this->success();
 	}
 	
-	protected function setRemoteServer(string $user, string $host, string $klahvikPatH)
-	{
-		$this->remote = new Server($this, $user, $host);
-		$this->remote->setKlahvikPath($klahvikPatH);
-	}
-	
-	protected function setVagrantServer(string $user, string $host, string $klahvikPatH)
-	{
-		$this->vagrant = new Server($this, $user, $host);
-		$this->vagrant->setKlahvikPath($klahvikPatH);
-	}
-	
-	protected function opt(string $name, $value = null)
+	public function opt(string $name, $value = null)
 	{
 		if ($value === null)
 		{
@@ -156,5 +178,5 @@ class Command extends \Symfony\Component\Console\Command\Command
 		//void
 	}
 	
-	protected function configServers() { }
+	protected function configureRemote() { }
 }

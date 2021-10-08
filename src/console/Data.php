@@ -11,7 +11,6 @@ class Data extends Command
 	
 	public function configure(): void
 	{
-		$this->configServers();
 		$this->addArgument('sync', InputArgument::REQUIRED);
 	}
 	

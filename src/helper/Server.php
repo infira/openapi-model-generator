@@ -10,14 +10,15 @@ use Infira\Klahvik\console\Command;
 class Server
 {
 	private ?string $klahvikPath;
+	private ?string $tmpPath;
 	private string  $user;
 	private string  $host;
 	private ?int    $port;
 	private Command $cmd;
 	
-	public function __construct(Command $cmd, string $user, string $host, int $port = null)
+	public function __construct(Command &$cmd, string $user, string $host, int $port = null)
 	{
-		$this->cmd  = $cmd;
+		$this->cmd  = &$cmd;
 		$this->user = $user;
 		$this->host = $host;
 		$this->port = $port;
@@ -30,12 +31,17 @@ class Server
 	
 	public function klahvikPath(string $path = ''): string
 	{
-		if (str_contains($path, '*'))
-		{
-			return $this->klahvikPath . $path;
-		}
-		
-		return Dir::fixPath($this->klahvikPath . $path);
+		return $this->klahvikPath . $path;
+	}
+	
+	public function setTmpPath(string $path)
+	{
+		$this->tmpPath = $path;
+	}
+	
+	public function tmp(string $path = ''): string
+	{
+		return $this->tmpPath . $path;
 	}
 	
 	private function ssh(): Ssh
@@ -43,10 +49,6 @@ class Server
 		return Ssh::create($this->user, $this->host, $this->port);
 	}
 	
-	/**
-	 * @param string|array $command
-	 * @return \Symfony\Component\Process\Process
-	 */
 	public function execute($command, callable $outputCallback = null): Process
 	{
 		$ssh = $this->ssh();
@@ -58,7 +60,7 @@ class Server
 		return $ssh->execute($command);
 	}
 	
-	public function runKlahvikScript(string $script, string $arguments = '', callable $outputCallback = null)
+	public function runKlahvikScript(string $script, string $arguments = '')
 	{
 		$arguments = $arguments ?: " $arguments";
 		$bashPath  = $this->klahvikPath('bash');
@@ -67,22 +69,6 @@ class Server
 			"cd $bashPath",
 			"bash $script $arguments",
 		], fn($line) => $this->say($line));
-	}
-	
-	public function downloadFromKlahvik(string $filePattern, string $destination)
-	{
-		$this->rsync($this->klahvikPath($filePattern), $destination);
-	}
-	
-	public function importDb(string $sourceDb, string $fromDb, bool $sudo = false)
-	{
-		$structureFile = $this->klahvikPath("tmp/$fromDb.structure.sql");
-		$dataFile      = $this->klahvikPath("tmp/$fromDb.data.sql");
-		$mysql         = $sudo ?: "sudo mysql" . "mysql";
-		$this->execute([
-			"$mysql $sourceDb < $structureFile",
-			"$mysql $sourceDb < $dataFile",
-		]);
 	}
 	
 	public function rsync(string $src, string $destination)

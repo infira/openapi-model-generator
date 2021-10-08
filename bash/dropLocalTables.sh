@@ -1,4 +1,5 @@
 declare db=$1
+declare tempPath=$2
 # shellcheck disable=SC2006
 for table in $(echo "show tables" | sudo mysql ${db}); do
   if [[ ! $table == "Tables_in_${db}" ]]; then
@@ -9,7 +10,7 @@ for table in $(echo "show tables" | sudo mysql ${db}); do
     fi
   fi
 done
-declare dropPath="../tmp/${db}.drop.sql"
-echo "${DROP_TABLES_STRING}" >>"${dropPath}"
-sudo mysql "${db}" <"${dropPath}"
-rm -f "${dropPath}"
+declare dropPath="${tempPath}${db}.drop.sql"
+echo "${DROP_TABLES_STRING}" >> ${dropPath}
+sudo mysql ${db} < ${dropPath}
+rm -f ${dropPath}
