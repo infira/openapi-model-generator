@@ -38,6 +38,9 @@ class Command extends \Symfony\Component\Console\Command\Command
 		{
 			parent::__construct("$this->name");
 		}
+		
+		$this->local = new Local();
+		$this->local->setKlahvikPath(KLAHVIK_PATH);
 	}
 	
 	public function configure(): void
@@ -68,16 +71,10 @@ class Command extends \Symfony\Component\Console\Command\Command
 		$this->remote->setKlahvikPath($klahvikPatH);
 	}
 	
-	protected function setVagrantServeer(string $user, string $host, string $klahvikPatH)
+	protected function setVagrantServer(string $user, string $host, string $klahvikPatH)
 	{
 		$this->vagrant = new Server($this, $user, $host);
 		$this->vagrant->setKlahvikPath($klahvikPatH);
-	}
-	
-	protected function setLocal(string $klahvikPatH)
-	{
-		$this->local = new Local();
-		$this->local->setKlahvikPath($klahvikPatH);
 	}
 	
 	protected function opt(string $name, $value = null)
