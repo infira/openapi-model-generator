@@ -1,4 +1,3 @@
 /vendor/
-/tmp/*
 /composer.lock
-/tmp
+/tmp/compiledTemplates/*.php

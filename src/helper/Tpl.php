@@ -5,6 +5,7 @@ use Infira\Utils\RuntimeMemory as Rm;
 use Infira\Utils\File;
 use Infira\Utils\Variable;
 use Infira\omg\Omg;
+use Infira\console\Bin;
 
 class Tpl
 {
@@ -44,7 +45,7 @@ class Tpl
 			$smarty->caching          = false;
 			$smarty->compile_check    = true;
 			$smarty->force_compile    = true;
-			$smarty->setCompileDir('../tmp/compiledTemplates');
+			$smarty->setCompileDir(Bin::getPath('../tmp/compiledTemplates'));
 			
 			return $smarty;
 		});
@@ -53,7 +54,7 @@ class Tpl
 	public static function load(string $name, array $variables = [], array $replaces = []): string
 	{
 		$ext = File::getExtension($name);
-		$tpl = "../src/templates/$name";
+		$tpl = Bin::getPath("../src/templates/$name");
 		if (!file_exists($tpl))
 		{
 			Omg::error("template $tpl does not exist");
@@ -78,5 +79,3 @@ class Tpl
 		return $res;
 	}
 }
-
-?>
