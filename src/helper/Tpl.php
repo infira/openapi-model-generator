@@ -4,6 +4,7 @@ namespace Infira\omg\helper;
 use Infira\Utils\RuntimeMemory as Rm;
 use Infira\Utils\File;
 use Infira\Utils\Variable;
+use Infira\omg\Omg;
 
 class Tpl
 {
