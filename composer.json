@@ -1,11 +1,10 @@
 {
-  "name": "infira/klahvik",
+  "name": "infira/openapi-model-generator",
   "autoload": {
 	"psr-4": {
-	  "Infira\\Klahvik\\console\\gws\\": "src/console/gws",
-	  "Infira\\Klahvik\\console\\": "src/console",
-	  "Infira\\Klahvik\\helper\\": "src/helper",
-	  "Infira\\Klahvik\\": "src/"
+	  "Infira\\omg\\generator\\": "src/generator",
+	  "Infira\\omg\\helper\\": "src/helper",
+	  "Infira\\omg\\": "src/"
 	}
   },
   "minimum-stability": "dev",
@@ -16,13 +15,11 @@
 	}
   ],
   "bin": [
-	"bin/klahvik"
+	"bin/omg"
   ],
   "require": {
-	"symfony/console": "5.*",
-	"symfony/process": "5.*",
-	"infira/utils": "2.*",
-	"spatie/ssh": "1.*",
-	"infira/errorhandler": "1.4.*"
+	"infira/console": "*",
+	"cebe/php-openapi": "1.5.x-dev",
+	"smarty/smarty": "3.*"
   }
 }

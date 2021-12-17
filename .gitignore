@@ -1,3 +1,5 @@
 /vendor/
 /tmp/*
 /composer.lock
+/tmp
+/test/generated
