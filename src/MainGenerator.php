@@ -9,6 +9,7 @@ use Infira\omg\generator\PathRegister;
 use Symfony\Component\Yaml\Yaml;
 use Infira\omg\helper\Tpl;
 use Infira\omg\generator\ComponentRequestBody;
+use Infira\Utils\Dir;
 
 class MainGenerator
 {
@@ -102,6 +103,7 @@ class MainGenerator
 		]));
 		*/
 		
+		Dir::flush(Config::$destination);
 		foreach ($this->api->components->schemas as $name => $schema)
 		{
 			Omg::validateSchema($schema);

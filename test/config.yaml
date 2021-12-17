@@ -1,6 +1,0 @@
-destination: /var/www/git/gitHubInfira/openapi-model-generator/test/generated
-mandatoryResponseProperties: true
-rootNamespace: 'TAPI\apiSpec'
-#pathNamesapceTemplate : '{tags[0]}/{method}/{path[1:*]}/{operationID}?{path[last]}'
-# when object or property has nullable and default is not defined then handle default as null
-nullableDefaultNull: true
