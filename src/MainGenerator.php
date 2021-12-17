@@ -80,6 +80,7 @@ class MainGenerator
 	{
 		$this->validate();
 		
+		Dir::flush(Config::$destination);
 		$ns = Config::getRootNamespace() . '\\lib';
 		Generator::makeFile('lib/RObject.php', Tpl::load('RObject.php', [
 			'namespace' => 'namespace ' . $ns . ';',
@@ -103,7 +104,6 @@ class MainGenerator
 		]));
 		*/
 		
-		Dir::flush(Config::$destination);
 		foreach ($this->api->components->schemas as $name => $schema)
 		{
 			Omg::validateSchema($schema);
