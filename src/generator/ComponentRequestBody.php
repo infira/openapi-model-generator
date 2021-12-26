@@ -15,7 +15,8 @@ class ComponentRequestBody extends Generator
 	
 	public function make(RequestBody $requestBody)
 	{
-		$generator              = $this->getGenerator($requestBody->content['application/json']->schema, '../%className%', '%className%', 'auto');
+		$contentType            = $this->getContentType($requestBody);
+		$generator              = $this->getGenerator($requestBody->content[$contentType]->schema, '../%className%', '%className%', 'auto');
 		$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
 		$generator->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
 		$generator->make();

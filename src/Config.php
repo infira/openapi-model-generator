@@ -11,7 +11,10 @@ class Config
 	public static $destination                 = '';
 	public static $rootNamespace               = '';
 	public static $pathNamespaceTemplate       = '{path[0]}/{method}/{operationID?generateName(path[1:*])}';
+	public static $operationInputParameterName = 'rb';
+	public static $laravel                     = false;
 	public static $nullableDefaultNull         = true;//when object or property has nullable and default is not defined then handle default as null
+	public static $version                     = 1;
 	
 	public static function load(array $config)
 	{

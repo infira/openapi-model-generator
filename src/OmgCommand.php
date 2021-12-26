@@ -35,14 +35,12 @@ class OmgCommand extends \Infira\console\Command
 	public function runCommand()
 	{
 		$configFile = $this->input->getArgument('config');
-		if (!is_file($configFile))
-		{
+		if (!is_file($configFile)) {
 			$this->error('Config file does not exists');
 		}
 		$path = pathinfo($configFile);
 		
-		if ($path['extension'] != 'yaml')
-		{
+		if ($path['extension'] != 'yaml') {
 			$this->error('Config file must be in yaml');
 		}
 		Config::load(Yaml::parseFile($configFile));
@@ -54,18 +52,15 @@ class OmgCommand extends \Infira\console\Command
 	
 	private function loadAPI(string $file = null)
 	{
-		if ($file === null)
-		{
+		if ($file === null) {
 			$file = Config::$spec;
 		}
-		if (!is_file($file))
-		{
+		if (!is_file($file)) {
 			$this->error('API file does not exists');
 		}
 		$path = pathinfo($file);
 		
-		switch (strtolower($path['extension']))
-		{
+		switch (strtolower($path['extension'])) {
 			case 'yaml':
 				$this->api = Reader::readFromYamlFile($file, OpenApi::class, false);
 			break;
@@ -82,12 +77,10 @@ class OmgCommand extends \Infira\console\Command
 	
 	private function validateAPI()
 	{
-		if (!$this->api)
-		{
+		if (!$this->api) {
 			$this->error('API spec is not loaded');
 		}
-		if (!Config::isLoaded())
-		{
+		if (!Config::isLoaded()) {
 			$this->error('Config is not loaded');
 		}
 		$this->api->validate();
@@ -100,7 +93,7 @@ class OmgCommand extends \Infira\console\Command
 	private function make()
 	{
 		Dir::flush(Config::$destination);
-		$ns = Config::getRootNamespace() . '\\lib';
+		$ns = $this->getLibNs();
 		Generator::makeFile('lib/RObject.php', Tpl::load('RObject.php', [
 			'namespace' => 'namespace ' . $ns . ';',
 		]));
@@ -113,9 +106,8 @@ class OmgCommand extends \Infira\console\Command
 			'rootNamespace' => $ns,
 			'namespace'     => 'namespace ' . $ns . ';',
 		]));
-		Generator::makeFile('lib/Operation.php', Tpl::load('Operation.php', [
-			'namespace' => 'namespace ' . $ns . ';',
-		]));
+		
+		$this->makeOperation();
 		
 		/*
 		Generator::makeFile('lib/Response.php', Tpl::load('Response.php', [
@@ -123,29 +115,47 @@ class OmgCommand extends \Infira\console\Command
 		]));
 		*/
 		
-		foreach ($this->api->components->schemas as $name => $schema)
-		{
+		foreach ($this->api->components->schemas as $name => $schema) {
 			Omg::validateSchema($schema);
-			if (!Omg::isMakeable($schema->type))
-			{
+			if (!Omg::isMakeable($schema->type)) {
 				continue;
 			}
 			$generator = Omg::getGenerator($schema->type, "/component/schema/$name", "#/components/schemas/$name", $schema);
 			$generator->make();
 		}
 		
-		foreach ($this->api->components->requestBodies as $name => $requestBody)
-		{
+		foreach ($this->api->components->requestBodies as $name => $requestBody) {
 			$componentResponseGenerator = new ComponentRequestBody($name);
 			$componentResponseGenerator->make($requestBody);
 		}
 		
-		foreach ($this->api->components->responses as $name => $response)
-		{
+		foreach ($this->api->components->responses as $name => $response) {
 			$componentResponseGenerator = new ComponentResponse($name);
 			$componentResponseGenerator->make($response);
 		}
 		$pathRegisterGenerator = new PathRegister();
 		$pathRegisterGenerator->make($this->api->paths);
+	}
+	
+	private function getLibNs(): string
+	{
+		return Config::getRootNamespace() . '\\lib';
+	}
+	
+	private function makeOperation()
+	{
+		$vars = [
+			'namespace'                   => 'namespace ' . $this->getLibNs() . ';',
+			'operationInputParameterName' => Config::$operationInputParameterName,
+			'implements'                  => [],
+			'laravel'                     => Config::$laravel,
+		];
+		if (Config::$laravel) {
+			$vars['implements'] = ['\Illuminate\Contracts\Support\Renderable'];
+		}
+		
+		$vars['implements'] = count($vars['implements']) > 0 ? ' implements ' . join(', ', $vars['implements']) : '';
+		$template           = Config::$version == 1 ? 'Operation.tpl' : 'Operation.v2.tpl';
+		Generator::makeFile('lib/Operation.php', Tpl::load($template, $vars));
 	}
 }

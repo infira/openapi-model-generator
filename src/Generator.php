@@ -7,6 +7,8 @@ use Infira\Utils\File;
 use cebe\openapi\spec\Reference;
 use cebe\openapi\spec\Schema;
 use Infira\omg\helper\Tpl;
+use cebe\openapi\spec\Response;
+use Infira\omg\helper\Utils;
 
 abstract class Generator
 {
@@ -75,7 +77,7 @@ abstract class Generator
 			Omg::error("class $cid is already generated from " . Omg::getGenerated($cid));
 		}
 		Omg::setGenerated($cid, $this->getSchemaLocation());
-		$className              = ucfirst($this->getClassName());
+		$className              = Utils::className($this->getClassName());
 		$vars['className']      = $className;
 		$vars['schemaLocation'] = $this->getSchemaLocation();
 		
@@ -175,6 +177,22 @@ abstract class Generator
 		$file = str_replace('\\', DIRECTORY_SEPARATOR, str_replace(Config::getRootNamespace() . '\\', '', $this->getNamespace("../") . "\\$className.php"));
 		
 		return self::makeFile($file, $src);
+	}
+	
+	/**
+	 * @param Reference|Response $resource
+	 * @return string
+	 */
+	protected final function getContentType($resource): string
+	{
+		if ($resource instanceof Reference)
+		{
+			return $this->getContentType($resource->resolve());
+		}
+		else//if ($resource instanceof Response)
+		{
+			return array_keys((array)$resource->content)[0];
+		}
 	}
 	
 	protected final function getReferenceClassPath(string $ref): string
@@ -462,6 +480,7 @@ abstract class Generator
 		{
 			$docValueType[] = 'array';
 			$docValueType[] = '\stdClass';
+			$docValueType[] = 'callable';
 			$docValueType[] = $dataClass;
 		}
 		else

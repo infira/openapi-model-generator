@@ -15,7 +15,8 @@ class ComponentResponse extends Generator
 	
 	public function make(Response $response)
 	{
-		$generator = $this->getGenerator($response->content['application/json']->schema, '../%className%', '%className%', 'auto');
+		$contentType = $this->getContentType($response);
+		$generator = $this->getGenerator($response->content[$contentType]->schema, '../%className%', '%className%', 'auto');
 		$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
 		$generator->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
 		$generator->make();
