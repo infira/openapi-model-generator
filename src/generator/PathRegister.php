@@ -16,15 +16,16 @@ class PathRegister extends \Infira\omg\Generator
 	{
 		$this->setVariable('returnType', $this->getLibClassPath('Operation'));
 		/** @var \cebe\openapi\spec\PathItem $def */
-		foreach ($paths as $path => $def)
-		{
+		foreach ($paths as $path => $def) {
+			if (!isset($this->variables['paths'][$path])) {
+				$this->variables['paths'][$path] = [];
+			}
 			$operations = $def->getOperations();
-			foreach ($operations as $method => $operation)
-			{
+			foreach ($operations as $method => $operation) {
 				$operationGenerator = new PathOperation($path, $method, $operation);
 				$operationGenerator->make();
 				
-				$this->add2Variable('paths', ['path' => $path, 'method' => $method, 'class' => $operationGenerator->getFullClassPath()]);
+				$this->variables['paths'][$path][$method] = ['path' => $path, 'method' => $method, 'class' => $operationGenerator->getFullClassPath()];
 			}
 		}
 		$this->makeClass();
