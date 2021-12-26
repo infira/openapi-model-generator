@@ -220,14 +220,14 @@ class PathOperation extends ObjectTemplate
 			}
 			else
 			{
-				$generateFrom = $this->operation->requestBody->content['application/json']->schema;
+				$generateFrom = $this->operation->requestBody->content[$this->getContentType($this->operation->requestBody)]->schema;
 				$description  = $this->operation->requestBody->description;
 			}
 			$generator = $this->getGenerator($generateFrom, '../body/%className%Body', "requestBodies", 'auto');
 			$generator->addConstructorLine('$this->fillNonExistingWithDefaultValues = true;');
 			$generator->make();
 			$this->addConstructorLine('$this->registerRequestBody(\'%s\');', $generator->getFullClassPath());
-			$this->addDocProperty('rb', 'singleClass', $generator->getFullClassPath(), false, $description);
+			$this->addDocProperty(Config::$operationInputParameterName, 'singleClass', $generator->getFullClassPath(), false, $description);
 			
 		}
 		
@@ -235,14 +235,14 @@ class PathOperation extends ObjectTemplate
 		/** @var Response $response */
 		foreach ($this->operation->responses as $httpCode => $response)
 		{
+			$contentType = $this->getContentType($response);
 			if ($response instanceof Reference)
 			{
-				$this->makeResponse($response, $httpCode);
-				
+				$this->makeResponse($response, $httpCode, $contentType);
 			}
 			elseif ($response instanceof Response)
 			{
-				$this->makeResponse($response->content['application/json']->schema, $httpCode);
+				$this->makeResponse($response->content[$contentType]->schema, $httpCode, $contentType);
 			}
 			else
 			{
@@ -258,13 +258,14 @@ class PathOperation extends ObjectTemplate
 	/**
 	 * @param Reference|Schema $bodySchema
 	 * @param string           $httpCode
+	 * @param string           $contentType
 	 */
-	private function makeResponse($bodySchema, string $httpCode)
+	private function makeResponse($bodySchema, string $httpCode, string $contentType)
 	{
 		$ucHttpCode = ucfirst($httpCode);
 		if ($bodySchema instanceof Reference and Omg::isComponentRef($bodySchema->getReference()))
 		{
-			$this->registerHttpResponse($httpCode, $this->getReferenceClassPath($bodySchema->getReference()));
+			$this->registerHttpResponse($httpCode, $this->getReferenceClassPath($bodySchema->getReference()), $contentType);
 		}
 		else
 		{
@@ -273,22 +274,33 @@ class PathOperation extends ObjectTemplate
 			$generator->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
 			
 			$generator->make();
-			$this->registerHttpResponse($httpCode, $generator->getFullClassPath());
+			$this->registerHttpResponse($httpCode, $generator->getFullClassPath(), $contentType);
 		}
 	}
 	
-	private function registerHttpResponse(string $httpCode, string $class)
+	private function registerHttpResponse(string $httpCode, string $class, string $contentType)
 	{
-		$this->addConstructorLine('$this->registerResponse(\'%s\',\'%s\');', $httpCode, $class);
+		if (Config::$version > 1)
+		{
+			$this->addConstructorLine('$this->registerResponse(\'%s\',\'%s\',\'%s\');', $httpCode, $class, $contentType);
+		}
+		else
+		{
+			$this->addConstructorLine('$this->registerResponse(\'%s\',\'%s\');', $httpCode, $class);
+		}
 		$this->addDocProperty("res$httpCode", 'singleClass', $class, false, "http code $httpCode class");
 		$this->add2Variable('httpResponses', ['code' => $httpCode, 'class' => $class]);
 		$this->responseClasses[] = $class;
 		
 		$bodyLines = [
 			'$this->activeResponseHttpCode = \'' . $httpCode . '\';',
-			sprintf('$this->%s = $content;', "res$httpCode"),
-			'return $this;',
 		];
+		if (Config::$version > 1)
+		{
+			$bodyLines[] = '$this->activeResponseHttpCode = \'' . $httpCode . '\';';
+		}
+		$bodyLines[] = sprintf('$this->%s = $content;', "res$httpCode");
+		$bodyLines[] = 'return $this;';
 		$this->addMethod("set$httpCode", $class, $class, 'content', false, 'self', "http operation(httpCode=$httpCode) data model", $bodyLines);
 	}
 	

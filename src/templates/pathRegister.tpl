@@ -12,19 +12,42 @@ class {$className}{$extends}
 {
     private static $paths = [
 {foreach from = $paths item = req}
-    '[{$req.method}]{$req.path}' => '{$req.class}',
+        '[{$req.method}]{$req.path}' => '{$req.class}',
 {/foreach}
-];
+    ];
 
     public static function getOperation(string $method, string $path): ?{$returnType}
+    {
+        $cn = self::getOperationClass($method, $path);
+        if (!$cn)
+        {
+            return null;
+        }
+
+        return new $cn();
+    }
+
+    public static function getOperationClass(string $method, string $path): ?string
     {
         $key = sprintf('[%s]%s', strtolower($method), $path);
         if (!isset(self::$paths[$key]))
         {
             return null;
         }
-        $cn = self::$paths[$key];
 
-        return new $cn();
+        return self::$paths[$key];
     }
+
+    public static function operationExists(string $method, string $path): bool
+    {
+        $key = sprintf('[%s]%s', strtolower($method), $path);
+
+        return isset(self::$paths[$key]);
+    }
+
+    public static function getPaths(): array
+    {
+        return self::$paths;
+    }
+
 }

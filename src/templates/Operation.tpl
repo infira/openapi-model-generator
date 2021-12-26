@@ -1,5 +1,5 @@
 <?php
-//%namespace%
+{$namespace}
 
 abstract class Operation
 {
@@ -30,13 +30,11 @@ abstract class Operation
 	
 	public function __get(string $name)
 	{
-		if (array_key_exists($name, $this->responses) or $name == 'rb')
+		if (array_key_exists($name, $this->responses) or $name == '{$operationInputParameterName}')
 		{
-			//$class = $name == 'rb' ? $this->requestBodyClass : $this->responses[$name];
 			$this->$name = Storage::NOT_SET;
 			
 			return $this->$name;
-			//return new $class();
 		}
 		else
 		{
@@ -46,10 +44,10 @@ abstract class Operation
 	
 	public function __set(string $name, $value)
 	{
-		if ($name == 'rb')
+		if ($name == '{$operationInputParameterName}')
 		{
 			$class    = $this->requestBodyClass;
-			$this->rb = new $class($value);
+			$this->{$operationInputParameterName} = new $class($value);
 			
 			return $this->$name;
 		}
@@ -100,7 +98,7 @@ abstract class Operation
 	{
 		return $this->method;
 	}
-	
+
 	public final function getResponse(): \stdClass
 	{
 		if (!$this->activeResponseHttpCode)
@@ -111,10 +109,10 @@ abstract class Operation
 		$res->code = $this->activeResponseHttpCode;
 		$name      = "res$this->activeResponseHttpCode";
 		$res->res  = $this->$name;
-		
+
 		return $res;
 	}
-	
+
 	private function error(string $msg)
 	{
 		throw new \Exception($msg);
