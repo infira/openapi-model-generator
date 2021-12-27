@@ -5,6 +5,7 @@ namespace Infira\omg\templates;
 use Nette\PhpGenerator\Method;
 use Infira\omg\helper\Utils;
 use Infira\omg\Config;
+use Nette\PhpGenerator\Parameter;
 
 /**
  * @mixin Method
@@ -53,7 +54,6 @@ class MethodTemplate extends Magics
 	{
 		$this->method->setReturnType($type);
 		if ($addComment) {
-			$this->addComment(' ');
 			$this->addComment('@return %s', Utils::extractName($type));
 		}
 		
@@ -76,19 +76,23 @@ class MethodTemplate extends Magics
 	public function addParameters(array $parameters)
 	{
 		foreach ($parameters as $paramName => $paramType) {
-			$param = $this->method->addParameter($paramName);
-			
-			if (Utils::isClassLike($paramType)) {
-				$this->ct->import($paramType);
-			}
-			
-			$this->addParamComment($paramName, $paramType);
-			
-			$types = Utils::makePhpTypes($paramType, false);
-			if (Config::$phpVersion > 7.3 or count($types) == 1) {
-				$param->setType(join('|', $types));
-			}
+			$this->addTypeParameter($paramName, $paramType);
 		}
+	}
+	
+	public function addTypeParameter(string $paramName, string $paramType): Parameter
+	{
+		$param = $this->method->addParameter($paramName);
+		if (Utils::isClassLike($paramType)) {
+			$this->ct->import($paramType);
+		}
+		$this->addParamComment($paramName, $paramType);
+		$types = Utils::makePhpTypes($paramType, false);
+		if (Config::$phpVersion > 7.3 or count($types) == 1) {
+			$param->setType(join('|', $types));
+		}
+		
+		return $param;
 	}
 	
 	private function doAddBodyLine($line, string $type)

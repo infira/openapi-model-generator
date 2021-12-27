@@ -79,6 +79,9 @@ class ClassTemplate extends Magics
 	
 	public function import(string $name, ?string $alias = null)
 	{
+		if ($name[0] == '?') {
+			$name = substr($name, 1);
+		}
 		$this->phpf->addUse($name, $alias);
 	}
 	

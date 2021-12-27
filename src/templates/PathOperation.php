@@ -10,7 +10,6 @@ class PathOperation extends Objekt
 	public function registerHttpResponse(string $httpCode, string $class, string $contentType)
 	{
 		$methodName = "res$httpCode";
-		$params     = $fillParams = ['fill' => $class];
 		
 		$comment       = "set response(httpCode=$httpCode)";
 		$httpCodeParam = $httpCode;
@@ -19,23 +18,26 @@ class PathOperation extends Objekt
 		}
 		elseif ($httpCode == 'default') {
 			$methodName    = 'default';
-			$params        = array_merge(['httpCode' => 'int'], $params);
-			$comment       = "set response";
+			$comment       = 'set response by $httpCode';
 			$httpCodeParam = '$httpCode';
 		}
 		$getMethodName = sprintf('get%sModel', ucfirst($methodName));
+		$classType     = "?$class";
 		
 		$this->import($class);
 		$this->addDocPropertyComment($methodName, Utils::extractName($class), "http code $httpCode class");
 		
 		$method = $this->createMethod($methodName, $comment);
 		$method->addBodyLine(sprintf('return $this->setResponse(%s, $this->%s($fill) ,\'%s\')', $httpCodeParam, $getMethodName, $contentType));
-		$method->addParameters($params);
+		if ($httpCode == 'default') {
+			$method->addTypeParameter('httpCode', 'int');
+		}
+		$method->addTypeParameter('fill', $classType);
 		$method->setReturnType('self', true);
 		
 		$getMethod = $this->createMethod($getMethodName);
-		$getMethod->addParameters($fillParams);
-		$getMethod->setReturnType($class);
+		$getMethod->addTypeParameter('fill', $classType);
+		$getMethod->setReturnType($class, true);
 		$getMethod->addBodyLine(sprintf('return $this->getModel($fill,%s);', Utils::extractClass($class)));
 	}
 }
