@@ -11,6 +11,8 @@ use Infira\omg\helper\Tpl;
 use Infira\omg\generator\ComponentRequestBody;
 use Infira\Utils\Dir;
 use Symfony\Component\Console\Input\InputArgument;
+use Nette\PhpGenerator\PhpFile;
+use Infira\omg\templates\Operation;
 
 class OmgCommand extends \Infira\console\Command
 {
@@ -93,7 +95,7 @@ class OmgCommand extends \Infira\console\Command
 	private function make()
 	{
 		Dir::flush(Config::$destination);
-		$ns = $this->getLibNs();
+		$ns = Omg::getLibPath();
 		Generator::makeFile('lib/RObject.php', Tpl::load('RObject.php', [
 			'namespace' => 'namespace ' . $ns . ';',
 		]));
@@ -137,25 +139,16 @@ class OmgCommand extends \Infira\console\Command
 		$pathRegisterGenerator->make($this->api->paths);
 	}
 	
-	private function getLibNs(): string
-	{
-		return Config::getRootNamespace() . '\\lib';
-	}
-	
 	private function makeOperation()
 	{
-		$vars = [
-			'namespace'                   => 'namespace ' . $this->getLibNs() . ';',
-			'operationInputParameterName' => Config::$operationInputParameterName,
-			'implements'                  => [],
-			'laravel'                     => Config::$laravel,
-		];
-		if (Config::$laravel) {
-			$vars['implements'] = ['\Illuminate\Contracts\Support\Renderable'];
-		}
+		$nss          = Omg::getLibPath();
+		$pf           = new PhpFile();
+		$ns           = $pf->addNamespace($nss);
+		$classPhpType = $pf->addClass("$nss\Operation");
+		$op           = new Operation($classPhpType, $ns);
+		$op->finalize();
 		
-		$vars['implements'] = count($vars['implements']) > 0 ? ' implements ' . join(', ', $vars['implements']) : '';
-		$template           = Config::$version == 1 ? 'Operation.tpl' : 'Operation.v2.tpl';
-		Generator::makeFile('lib/Operation.php', Tpl::load($template, $vars));
+		Generator::makeFile('lib/Operation.php', $pf->__toString());
 	}
+	
 }

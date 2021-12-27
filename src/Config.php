@@ -14,19 +14,16 @@ class Config
 	public static $operationInputParameterName = 'rb';
 	public static $laravel                     = false;
 	public static $nullableDefaultNull         = true;//when object or property has nullable and default is not defined then handle default as null
-	public static $version                     = 1;
+	public static $phpVersion                  = 7.3;
 	
 	public static function load(array $config)
 	{
-		foreach ($config as $name => $value)
-		{
-			if (!property_exists(self::class, $name))
-			{
+		foreach ($config as $name => $value) {
+			if (!property_exists(self::class, $name)) {
 				Omg::error("Config '$name' does not exist");
 			}
 			$type = gettype(self::$$name);
-			if ($type == 'boolean')
-			{
+			if ($type == 'boolean') {
 				$value = (bool)$value;
 			}
 			self::$$name = $value;

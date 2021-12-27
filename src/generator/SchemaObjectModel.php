@@ -6,83 +6,74 @@ use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Reference;
 use Infira\omg\Omg;
 
+/**
+ * @property-read \Infira\omg\templates\SchemaObjectModel $tpl
+ */
 class SchemaObjectModel extends ObjectTemplate
 {
 	public function __construct(string $namespace, string $schemaLocation)
 	{
-		parent::__construct($namespace, $schemaLocation);
-		$this->setExtender($this->getLibClassPath('RObject'));
+		parent::__construct($namespace, $schemaLocation, \Infira\omg\templates\SchemaObjectModel::class);
+		$this->tpl->extendLib('RObject');
 	}
 	
 	public function make(): string
 	{
 		$schema = $this->schema;
-		if ($schema)
-		{
-			foreach ($schema->properties as $propertyName => $property)
-			{
+		if ($schema) {
+			foreach ($schema->properties as $propertyName => $property) {
 				$dataClass = null;
 				
-				if ($property instanceof Reference)
-				{
+				if ($property instanceof Reference) {
 					$ref = $property->getReference();
 					/**
 					 * @var Schema $resolved
 					 */
 					$resolved = $property->resolve();
-					if (Omg::isMakeable($resolved->type) and Omg::isComponentRef($ref))
-					{
+					if (Omg::isMakeable($resolved->type) and Omg::isComponentRef($ref)) {
 						$dataClass = $this->getReferenceClassPath($ref);
 					}
 					$propertyPhpType = $resolved->type;
 					$property        = $resolved;
 				}
-				elseif ($property->type == 'array')
-				{
-					if ($property->items instanceof Reference)
-					{
+				elseif ($property->type == 'array') {
+					if ($property->items instanceof Reference) {
 						$ref = $property->items->getReference();
-						if (Omg::isComponentRef($ref))
-						{
+						if (Omg::isComponentRef($ref)) {
 							$sloc = "properties/$propertyName" . '/$ref:' . $ref;
 						}
-						else
-						{
+						else {
 							Omg::notImplementedYet();
 						}
 					}
-					else
-					{
+					else {
 						$sloc = "properties/$propertyName";
 					}
 					$generator = $this->getPropertyModelGenerator('array', $property, $propertyName, $sloc);
 					$dataClass = $generator->getFullClassPath();
-					if (!Omg::isGenerated($generator->getNamespace()))
-					{
+					if (!Omg::isGenerated($generator->getNamespace())) {
 						$generator->make();
 					}
 					$propertyPhpType = 'array';
 				}
-				elseif ($property->type == 'object')
-				{
+				elseif ($property->type == 'object') {
 					//debug([$propertyName => $property]);
 					$generator = $this->getPropertyModelGenerator('object', $property, $propertyName, "properties/$propertyName");
 					$generator->make();
 					$dataClass       = $generator->getFullClassPath();
 					$propertyPhpType = 'object';
 				}
-				else
-				{
+				else {
 					$propertyPhpType = $property->type;
 				}
 				
-				$bodyLines = [sprintf('$this->set(\'%s\', $value);', $propertyName), 'return $this;'];
-				$this->addMethod('set' . ucfirst($propertyName), $propertyPhpType, $dataClass, 'value', $property->nullable, 'self', $property->description, $bodyLines);
+				$bodyLines = [sprintf('$this->set(\'%s\', $value)', $propertyName), 'return $this'];
+				$this->tpl->addMethod('set' . ucfirst($propertyName), $propertyPhpType, $dataClass, 'value', $property->nullable, 'self', $property->description, $bodyLines);
 				
-				$this->addPropertyConfig($propertyName, $propertyPhpType, $dataClass, $schema, $property);
+				$this->tpl->addPropertyConfig($propertyName, $propertyPhpType, $dataClass, $schema, $property);
 				
 				$docPhpType = Omg::isMakeable($propertyPhpType) ? 'singleClass' : $propertyPhpType;
-				$this->addDocProperty($propertyName, $docPhpType, $dataClass, $property->nullable);
+				$this->tpl->addDocProperty($propertyName, $docPhpType, $dataClass, $property->nullable, $property->description);
 				
 				unset($propertyPhpType);
 			}
@@ -90,6 +81,7 @@ class SchemaObjectModel extends ObjectTemplate
 		
 		return parent::make();
 	}
+	
 	
 	/**
 	 * @param string|null      $type
@@ -102,12 +94,10 @@ class SchemaObjectModel extends ObjectTemplate
 	private function getPropertyModelGenerator(string $type, $schema, string $propertyName, string $schemaLocation)
 	{
 		$propertyName = ucfirst($propertyName);
-		if (strpos($this->getNamespace("./../property/%className%$propertyName"), 'property\property') !== false)
-		{
+		if (strpos($this->getNamespace("./../property/%className%$propertyName"), 'property\property') !== false) {
 			$namespace = "../../property/%className%$propertyName";
 		}
-		else
-		{
+		else {
 			$namespace = "../property/%className%$propertyName";
 		}
 		

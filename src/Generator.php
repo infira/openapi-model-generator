@@ -2,19 +2,39 @@
 
 namespace Infira\omg;
 
-use Infira\Utils\Globals;
 use Infira\Utils\File;
 use cebe\openapi\spec\Reference;
 use cebe\openapi\spec\Schema;
-use Infira\omg\helper\Tpl;
 use cebe\openapi\spec\Response;
 use Infira\omg\helper\Utils;
+use Nette\PhpGenerator\PhpFile;
 
 abstract class Generator
 {
-	public         $namespace      = [];
-	public         $schemaLocation = [];
-	private        $templateFile   = '';
+	public $namespace      = [];
+	public $schemaLocation = [];
+	
+	/**
+	 * @var \Nette\PhpGenerator\PhpFile
+	 */
+	protected $phpf;
+	
+	/**
+	 * @var \Infira\omg\templates\ClassTemplate
+	 */
+	public $tpl;
+	
+	/**
+	 * @var \Nette\PhpGenerator\PhpNamespace
+	 */
+	protected $ns;
+	
+	
+	/**
+	 * @var \Nette\PhpGenerator\ClassType
+	 */
+	protected $ct;
+	
 	private static $generatedItems = [];
 	
 	/**
@@ -22,28 +42,28 @@ abstract class Generator
 	 */
 	public $config;
 	
-	protected $variables         = [];
-	protected $requiredVariables = ['template'];
+	protected $variables = [];
 	
-	public function __construct(string $namespace = '/', string $schemaLocation)
+	public function __construct(string $namespace = '/', string $schemaLocation, string $tplClass)
 	{
-		$this->setVariable('docProperties', []);
-		$this->setVariable('methods', []);
-		$this->setVariable('docDescriptionLines', []);
-		$this->setVariable('constructorLines', []);
-		$this->setVariable('variableLines', []);
-		$this->setVariable('constructorArguments', '');
 		$this->setNamespace($namespace);
+		//debug($this->getNamespace(), $this->getClassName());
 		$this->schemaLocation = explode('\\', $this->getSchemaLocation($schemaLocation));
-		$this->setExtender('');
+		
+		
+		$this->phpf = new PhpFile();
+		$this->ns   = $this->phpf->addNamespace($this->getNamespace('../'));
+		$this->ct   = $this->ns->addClass(Utils::className($this->getClassName()));
+		$this->tpl  = new $tplClass($this->ct, $this->ns);
+		$this->tpl->setGenerator($this);
+		$this->tpl->addComment('Schema location ' . $this->getSchemaLocation());
 	}
 	
 	
 	public static function makeFile(string $file, string $src): string
 	{
 		$file = Config::$destination . "/$file";
-		if (!is_dir(dirname($file)))
-		{
+		if (!is_dir(dirname($file))) {
 			mkdir(dirname($file), 0777, true);
 		}
 		
@@ -54,129 +74,21 @@ abstract class Generator
 	
 	protected final function makeClass(): string
 	{
-		foreach ($this->requiredVariables as $rv)
-		{
-			if (!array_key_exists($rv, $this->variables))
-			{
-				Omg::error("required template variable '$rv' is missing");
-			}
-			elseif (!$this->variables[$rv])
-			{
-				Omg::error("required template variable '$rv' is empty");
-			}
-		}
-		$vars = $this->variables;
-		
 		$cid = $this->getNamespace();
-		if (!$cid)
-		{
+		if (!$cid) {
 			Omg::error("Class name creaton failed ($cid)");
 		}
-		if (Omg::isGenerated($cid))
-		{
+		if (Omg::isGenerated($cid)) {
 			Omg::error("class $cid is already generated from " . Omg::getGenerated($cid));
 		}
 		Omg::setGenerated($cid, $this->getSchemaLocation());
-		$className              = Utils::className($this->getClassName());
-		$vars['className']      = $className;
-		$vars['schemaLocation'] = $this->getSchemaLocation();
+		$className = Utils::className($this->getClassName());
 		
-		$vars['trace'] = [];
-		foreach (explode('<br>', Globals::getTrace(1)) as $item)
-		{
-			$item = trim(str_replace('<br />', '', $item));
-			if ($item)
-			{
-				$vars['trace'][] = $item;
-			}
-		}
-		
-		$extender        = $this->getExtender();
-		$vars['extends'] = $extender ? " extends $extender" : '';
-		
-		$ns                = $this->getNamespace("../");
-		$vars['namespace'] = "namespace $ns;";
-		
-		
-		$src = Tpl::load($this->getVariable('template'), $vars);
-		
-		//region usages
-		$re = '/([|?( ])\\\\' . join('\\\\', explode('\\', $ns)) . '\\\\/m';
-		if (preg_match($re, $src, $matches))
-		{
-			$src = preg_replace($re, '$1', $src);
-		}
-		
-		$re     = '/([|?( ])\\\\' . join('\\\\', explode('\\', $this->getNamespace('/'))) . '\\\\(\w|\\\\)+/m';
-		$match  = preg_match_all($re, $src, $matches);
-		$usages = [];
-		if ($match)
-		{
-			foreach ($matches[0] as $key => $matchStr)
-			{
-				$rns       = substr($matchStr, strlen($matches[1][$key]) + 1);
-				$lastSlash = strrpos($rns, '\\');
-				$rep       = substr($rns, $lastSlash + 1);
-				$uns       = substr($rns, 0, $lastSlash);
-				if ($className == $rep)
-				{
-					$prevName       = ucfirst($this->extractName($uns));
-					$rep            = "$prevName$rep";
-					$unscn          = " AS $rep";
-					$usages[$rns][] = $unscn;
-				}
-				else
-				{
-					$usages[$uns][] = $rep;
-				}
-				
-				$src = str_replace($matchStr, $matches[1][$key] . $rep, $src);
-			}
-		}
-		$usagesStr = [];
-		foreach ($usages as $uns => $classes)
-		{
-			$classes = array_unique(array_values($classes));
-			if (count($classes) > 1)
-			{
-				$usagesStr[] = "use $uns\\{" . join(', ', $classes) . '};';
-			}
-			else
-			{
-				if (strpos($classes[0], ' AS ') !== false)
-				{
-					$usagesStr[] = "use $uns$classes[0];";
-				}
-				else
-				{
-					$usagesStr[] = "use $uns\\$classes[0];";
-				}
-			}
-		}
-		if (!$usagesStr)
-		{
-			$vars['usages'] = Tpl::REMOVE_LINE;
-		}
-		else
-		{
-			$vars['usages'] = join("\n", $usagesStr);
-		}
-		$src = str_replace('%usages%', $vars['usages'], $src);
-		//endregion
-		
-		$newLes = [];
-		foreach (explode("\n", $src) as $line)
-		{
-			if (strpos($line, Tpl::REMOVE_LINE) === false)
-			{
-				$newLes[] = $line;
-			}
-		}
-		$src = join("\n", $newLes);
 		
 		$file = str_replace('\\', DIRECTORY_SEPARATOR, str_replace(Config::getRootNamespace() . '\\', '', $this->getNamespace("../") . "\\$className.php"));
+		$this->tpl->finalize();
 		
-		return self::makeFile($file, $src);
+		return self::makeFile($file, $this->phpf->__toString());
 	}
 	
 	/**
@@ -185,8 +97,7 @@ abstract class Generator
 	 */
 	protected final function getContentType($resource): string
 	{
-		if ($resource instanceof Reference)
-		{
+		if ($resource instanceof Reference) {
 			return $this->getContentType($resource->resolve());
 		}
 		else//if ($resource instanceof Response)
@@ -197,20 +108,16 @@ abstract class Generator
 	
 	protected final function getReferenceClassPath(string $ref): string
 	{
-		if (Omg::isComponentResponse($ref))
-		{
+		if (Omg::isComponentResponse($ref)) {
 			$type = 'response';
 		}
-		elseif (Omg::isComponentSchema($ref))
-		{
+		elseif (Omg::isComponentSchema($ref)) {
 			$type = 'schema';
 		}
-		elseif (Omg::isComponentRequestBody($ref))
-		{
+		elseif (Omg::isComponentRequestBody($ref)) {
 			$type = 'requestBodies';
 		}
-		else
-		{
+		else {
 			Omg::error('unknown reference');
 		}
 		
@@ -224,8 +131,7 @@ abstract class Generator
 	
 	private final function constructPath(string $rootPath, array $currentPath, string ...$parts): string
 	{
-		if (!$parts)
-		{
+		if (!$parts) {
 			$parts = [''];
 		}
 		array_walk($parts, function (&$p) { $p = str_replace('../', '[_CD_]', $p); });
@@ -233,8 +139,7 @@ abstract class Generator
 		$firstPart = strlen($parts[0]) > 0 ? $parts[0] : '';
 		$className = $this->getClassName();
 		
-		if (substr($firstPart, 0, strlen($rootPath)) == $rootPath)
-		{
+		if (substr($firstPart, 0, strlen($rootPath)) == $rootPath) {
 			$parts[0]  = '/' . substr($firstPart, strlen($rootPath) + 1);
 			$firstPart = '/';
 		}
@@ -260,16 +165,13 @@ abstract class Generator
 			$root     = array_slice($currentPath, 0, -1);
 			$parts    = [$className . join('', $parts)];
 		}
-		else
-		{
+		else {
 			$root = $currentPath ?: [$rootPath];
 		}
 		
 		$fullParts = array_merge($root, $parts);
-		foreach ($fullParts as $key => $item)
-		{
-			if (!$item)
-			{
+		foreach ($fullParts as $key => $item) {
+			if (!$item) {
 				unset($fullParts[$key]);
 				continue;
 			}
@@ -281,8 +183,7 @@ abstract class Generator
 		$final = join('\\', $fullParts);
 		$final = $this->cdNs($final);
 		
-		if (strpos($final, '.') !== false)
-		{
+		if (strpos($final, '.') !== false) {
 			Omg::error('not allowed character in namespace:' . $final);
 		}
 		
@@ -293,20 +194,16 @@ abstract class Generator
 	{
 		$cdPos   = strpos($ns, '[_CD_]');
 		$afterCd = substr($ns, $cdPos + 6);
-		if ($cdPos !== false)
-		{
-			if ($afterCd)
-			{
-				if ($afterCd[0] != '\\')
-				{
+		if ($cdPos !== false) {
+			if ($afterCd) {
+				if ($afterCd[0] != '\\') {
 					$afterCd = '\\' . $afterCd;
 				}
 			}
 			
 			$firstCdPos = $cdPos;
 			$prevPos    = $cdPos - 1;
-			if ($ns[$prevPos] == '\\')
-			{
+			if ($ns[$prevPos] == '\\') {
 				$firstCdPos--;
 			}
 			$tmpNs = substr($ns, 0, $firstCdPos);
@@ -319,7 +216,7 @@ abstract class Generator
 	
 	//region namespace helpers
 	
-	public function setNamespace(string ...$ns)
+	private function setNamespace(string ...$ns)
 	{
 		$this->namespace = explode('\\', $this->getNamespace(...$ns));
 	}
@@ -345,8 +242,6 @@ abstract class Generator
 	public final function getNamespace(string ...$parts): string
 	{
 		return $this->constructPath(Config::getRootNamespace(), $this->namespace, ...$parts);
-		
-		
 	}
 	
 	/**
@@ -379,14 +274,12 @@ abstract class Generator
 	 */
 	protected final function getClassName(string ...$parts): string
 	{
-		if ($parts)
-		{
+		if ($parts) {
 			$ar = explode('\\', $this->getNamespace(...$parts));
 			
 			return end($ar);
 		}
-		else
-		{
+		else {
 			return end($this->namespace);
 		}
 	}
@@ -408,34 +301,26 @@ abstract class Generator
 	 */
 	protected final function getGenerator($bodySchema, string $namespace, string $schemaLocation, string $type = null)
 	{
-		if ($bodySchema and !($bodySchema instanceof Reference) and !($bodySchema instanceof Schema))
-		{
+		if ($bodySchema and !($bodySchema instanceof Reference) and !($bodySchema instanceof Schema)) {
 			Omg::error('$bodySchema must be Reference or Schema ' . get_class($bodySchema) . ' was given');
 		}
-		if ($type and !in_array($type, ['object', 'array', 'auto'], true))
-		{
+		if ($type and !in_array($type, ['object', 'array', 'auto'], true)) {
 			Omg::error("unknown type('$type')");
 		}
-		if ($bodySchema instanceof Reference)
-		{
-			if (!Omg::isComponentRef($bodySchema->getReference()))
-			{
+		if ($bodySchema instanceof Reference) {
+			if (!Omg::isComponentRef($bodySchema->getReference())) {
 				Omg::notImplementedYet();
 			}
 			$generator = Omg::getGenerator($type, $this->getNamespace($namespace), $this->getSchemaLocation($schemaLocation));
-			$generator->setExtender($this->getReferenceClassPath($bodySchema->getReference()));
+			$generator->tpl->setExtends($this->getReferenceClassPath($bodySchema->getReference()));
 		}
-		else
-		{
-			if ($bodySchema)
-			{
+		else {
+			if ($bodySchema) {
 				Omg::validateSchema($bodySchema);
-				if ($type == 'auto')
-				{
+				if ($type == 'auto') {
 					$type = $bodySchema->type;
 				}
-				elseif ($type == null)
-				{
+				elseif ($type == null) {
 					Omg::error('type undefined');
 				}
 			}
@@ -445,90 +330,5 @@ abstract class Generator
 		return $generator;
 	}
 	
-	protected final function convertToPhpType(string $type): string
-	{
-		$convertTypes = ['integer' => 'int', 'number' => 'float', 'boolean' => 'bool'];
-		if (isset($convertTypes[$type]))
-		{
-			return $convertTypes[$type];
-		}
-		
-		return $type;
-	}
-	
-	protected final function getLibClassPath(string $lib): string
-	{
-		return $this->getFullClassPath("/lib/$lib");
-	}
-	
 	//endregion
-	
-	
-	//region variables
-	protected final function makePhpDocType(string $phpType, ?string $dataClass, bool $nullable): string
-	{
-		$docValueType = [];
-		if ($nullable)
-		{
-			$docValueType[] = 'null';
-		}
-		if ($phpType == 'singleClass')
-		{
-			$docValueType[] = $dataClass;
-		}
-		elseif ($dataClass)
-		{
-			$docValueType[] = 'array';
-			$docValueType[] = '\stdClass';
-			$docValueType[] = 'callable';
-			$docValueType[] = $dataClass;
-		}
-		else
-		{
-			$docValueType = [$this->convertToPhpType($phpType)];
-		}
-		
-		return join('|', $docValueType);
-	}
-	
-	protected final function makePhpArgumentType(?string $argType, ?string $dataClass, bool $nullable): string
-	{
-		if ($argType == 'singleClass')
-		{
-			$argType = $dataClass;
-		}
-		else
-		{
-			if ($dataClass)
-			{
-				return '';
-			}
-			else
-			{
-				$argType = $this->convertToPhpType($argType);
-				if ($nullable and $argType)
-				{
-					$argType = "?$argType";
-				}
-			}
-		}
-		
-		return $argType;
-	}
-	
-	protected final function setVariable(string $name, $value)
-	{
-		$this->variables[$name] = $value;
-	}
-	
-	protected final function getVariable(string $name) { return $this->variables[$name]; }
-	
-	protected final function add2Variable(string $name, $value) { $this->variables[$name][] = $value; }
-	
-	protected final function setTemplate(string $name) { $this->setVariable('template', $name); }
-	
-	public function setExtender(string $value) { $this->setVariable('extender', $value); }
-	
-	public function getExtender(): string { return $this->getVariable('extender'); }
-	//region
 }

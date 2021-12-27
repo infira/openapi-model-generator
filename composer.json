@@ -20,7 +20,7 @@
   "require": {
 	"infira/console": "*",
 	"cebe/php-openapi": "1.5.x-dev",
-	"smarty/smarty": "3.*",
-	"guzzlehttp/psr7": "2.*"
+	"guzzlehttp/psr7": "2.*",
+	"nette/php-generator": "v3.6.x-dev"
   }
 }

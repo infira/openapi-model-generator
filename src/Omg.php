@@ -36,16 +36,13 @@ class Omg
 	 */
 	public static function getGenerator(?string $type, string $namespace, string $schemaLocation, $schema = null)
 	{
-		if ($type == 'object')
-		{
+		if ($type == 'object') {
 			$generator = new SchemaObjectModel($namespace, $schemaLocation);
 		}
-		elseif ($type == 'array')
-		{
+		elseif ($type == 'array') {
 			$generator = new SchemaArrayModel($namespace, $schemaLocation);
 		}
-		else
-		{
+		else {
 			$generator = new SchemaBlankModel($namespace, $schemaLocation);
 		}
 		$generator->setSchema($schema);
@@ -55,29 +52,23 @@ class Omg
 	
 	public static function validateSchema(Schema &$schema)
 	{
-		if (!$schema->properties and $schema->allOf)
-		{
+		if (!$schema->properties and $schema->allOf) {
 			$schema->properties = [];
-			foreach ($schema->allOf as $object)
-			{
-				if ($object instanceof Reference)
-				{
+			foreach ($schema->allOf as $object) {
+				if ($object instanceof Reference) {
 					$schema->properties = array_merge($schema->properties, $object->resolve()->properties);
 				}
-				else
-				{
+				else {
 					$schema->properties = array_merge($schema->properties, $object->properties);
 				}
 			}
 		}
 		
-		if ($schema->properties and !$schema->type)
-		{
+		if ($schema->properties and !$schema->type) {
 			$schema->type = 'object';
 		}
 		
-		if ($schema->type == 'array' and !$schema->items)
-		{
+		if ($schema->type == 'array' and !$schema->items) {
 			self::error('array does not have any items defined');
 		}
 	}
@@ -110,6 +101,11 @@ class Omg
 	public static function notImplementedYet()
 	{
 		Omg::error('this part of the code is not implemented yet');
+	}
+	
+	public static function getLibPath(string $name = ''): string
+	{
+		return Config::getRootNamespace() . '\\lib' . ($name ? "\\$name" : '');
 	}
 	
 	public static function error(string $msg)
