@@ -5,8 +5,8 @@ namespace Infira\omg\templates;
 
 use Nette\PhpGenerator\ClassType;
 use Infira\omg\Config;
-use Nette\PhpGenerator\Literal;
 use Infira\omg\Omg;
+use Infira\omg\helper\Utils;
 
 class Operation extends ClassTemplate
 {
@@ -35,9 +35,9 @@ class Operation extends ClassTemplate
 		$constructor->addParameter('method')->setType('string')->setNullable(true);
 		$constructor->addParameter('path')->setType('string')->setNullable(true);
 		$constructor->addParameter('operationID')->setType('string')->setNullable(true);
-		$constructor->addEqBodyLine('$this->method', new Literal('$method'));
-		$constructor->addEqBodyLine('$this->path', new Literal('$path'));
-		$constructor->addEqBodyLine('$this->operationID', new Literal('$operationID'));
+		$constructor->addEqBodyLine('$this->method', Utils::literal('$method'));
+		$constructor->addEqBodyLine('$this->path', Utils::literal('$path'));
+		$constructor->addEqBodyLine('$this->operationID', Utils::literal('$operationID'));
 		
 		$hasRequestBody = $this->createMethod('hasRequestBody');
 		$hasRequestBody->setFinal(true)->setReturnType('bool');
@@ -109,7 +109,8 @@ $res = new Response(
 return $res;');
 		
 		$getModel = $this->createMethod('getModel');
-		$param           = $getModel->addParameter('fill');
+		$getModel->setProtected(true);
+		$param = $getModel->addParameter('fill');
 		if (Config::$phpVersion > 7.3) {
 			$param->setType('array|object|null');
 		}
@@ -117,7 +118,11 @@ return $res;');
 			$getModel->addParamComment('fill', 'array|object|null');
 		}
 		$getModel->addParameter('class')->setType('string');
-		$getModel->addBody('if (is_object($fill) AND $fill instanceof $class)
+		$getModel->addBody('if (is_callable($fill))
+{
+	return $fill(new $class(null));
+}
+elseif (is_object($fill) AND $fill instanceof $class)
 {
 	return $fill;
 }

@@ -68,9 +68,13 @@ class MethodTemplate extends Magics
 		$this->method->addComment(sprintf($format, ...$values));
 	}
 	
-	public function addParamComment(string $name, string $type)
+	public function addParamComment(string $name, string $type, bool $addCallableType = false)
 	{
-		$this->addComment('@param %s $%s', join('|', Utils::makePhpTypes($type, true)), $name);
+		$types = Utils::makePhpTypes($type, true);
+		if ($addCallableType) {
+			$types[] = 'callable';
+		}
+		$this->addComment('@param %s $%s', join('|', $types), $name);
 	}
 	
 	public function addParameters(array $parameters)
@@ -80,14 +84,17 @@ class MethodTemplate extends Magics
 		}
 	}
 	
-	public function addTypeParameter(string $paramName, string $paramType): Parameter
+	public function addTypeParameter(string $paramName, string $paramType, bool $addCallableType = false): Parameter
 	{
 		$param = $this->method->addParameter($paramName);
 		if (Utils::isClassLike($paramType)) {
 			$this->ct->import($paramType);
 		}
-		$this->addParamComment($paramName, $paramType);
+		$this->addParamComment($paramName, $paramType, $addCallableType);
 		$types = Utils::makePhpTypes($paramType, false);
+		if ($addCallableType) {
+			$types[] = 'callable';
+		}
 		if (Config::$phpVersion > 7.3 or count($types) == 1) {
 			$param->setType(join('|', $types));
 		}

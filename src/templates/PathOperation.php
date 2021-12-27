@@ -32,11 +32,11 @@ class PathOperation extends Objekt
 		if ($httpCode == 'default') {
 			$method->addTypeParameter('httpCode', 'int');
 		}
-		$method->addTypeParameter('fill', $classType);
+		$method->addTypeParameter('fill', $classType, true)->setDefaultValue(null);
 		$method->setReturnType('self', true);
 		
 		$getMethod = $this->createMethod($getMethodName);
-		$getMethod->addTypeParameter('fill', $classType);
+		$getMethod->addTypeParameter('fill', $classType, true)->setDefaultValue(null);
 		$getMethod->setReturnType($class, true);
 		$getMethod->addBodyLine(sprintf('return $this->getModel($fill,%s);', Utils::extractClass($class)));
 	}

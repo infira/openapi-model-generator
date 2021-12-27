@@ -4,8 +4,8 @@ namespace Infira\omg\templates;
 
 
 use Nette\PhpGenerator\ClassType;
-use Nette\PhpGenerator\Literal;
 use Infira\omg\Omg;
+use Infira\omg\helper\Utils;
 
 class Register extends ClassTemplate
 {
@@ -36,7 +36,7 @@ class Register extends ClassTemplate
 	\'%s\' => \'%s\'
 ]', $path['path'], $path['method'], $path['class']);
 		}
-		$this->pathsProp->setValue(new Literal(sprintf('[
+		$this->pathsProp->setValue(Utils::literal(sprintf('[
 %s
 ]', join(",\n", $lines))));
 		
