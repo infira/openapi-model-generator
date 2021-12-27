@@ -4,6 +4,7 @@ namespace Infira\omg\templates;
 
 use Nette\PhpGenerator\Method;
 use Infira\omg\helper\Utils;
+use Infira\omg\Config;
 
 /**
  * @mixin Method
@@ -14,12 +15,19 @@ class MethodTemplate extends Magics
 	 * @var \Nette\PhpGenerator\Method
 	 */
 	protected $method;
-	private   $lines           = [];
-	private   $eqLineSetMaxLen = 0;
 	
-	public function __construct(Method $method)
+	/**
+	 * @var \Infira\omg\templates\ClassTemplate
+	 */
+	private $ct;
+	
+	private $lines           = [];
+	private $eqLineSetMaxLen = 0;
+	
+	public function __construct(Method $method, ClassTemplate $ct)
 	{
 		$this->method = &$method;
+		$this->ct     = &$ct;
 		$this->setMagicVar('method');
 	}
 	
@@ -34,23 +42,60 @@ class MethodTemplate extends Magics
 		$this->doAddBodyLine([$set => sprintf($valueFormat, $value)], 'eq');
 	}
 	
-	public function addBodyLines(array $lines)
+	public function addBodyLine(string ...$lines)
 	{
-		array_walk($lines, function ($line)
-		{
-			$this->addBodyLine($line);
-		});
+		foreach ($lines as $line) {
+			$this->doAddBodyLine($line, 'normal');
+		}
 	}
 	
-	public function addBodyLine(string $line)
+	public function setReturnType(string $type, $addComment = true): MethodTemplate
 	{
-		$this->doAddBodyLine($line, 'normal');
+		$this->method->setReturnType($type);
+		if ($addComment) {
+			$this->addComment(' ');
+			$this->addComment('@return %s', $type);
+		}
+		
+		return $this;
+	}
+	
+	public function addComment(?string $format, ...$values)
+	{
+		if (!$format) {
+			return;
+		}
+		$this->method->addComment(sprintf($format, ...$values));
+	}
+	
+	public function addParamComment(string $name, string $type)
+	{
+		$this->addComment('@param %s $%s', join('|', Utils::makePhpTypes($type, true)), $name);
+	}
+	
+	public function addParameters(array $parameters)
+	{
+		foreach ($parameters as $paramName => $paramType) {
+			$param = $this->method->addParameter($paramName);
+			
+			if (Utils::isClassLike($paramType)) {
+				$this->ct->import($paramType);
+			}
+			
+			$this->addParamComment($paramName, $paramType);
+			
+			$types = Utils::makePhpTypes($paramType, false);
+			if (Config::$phpVersion > 7.3 or count($types) == 1) {
+				$param->setType(join('|', $types));
+			}
+		}
 	}
 	
 	private function doAddBodyLine($line, string $type)
 	{
 		$this->lines[] = ['line' => $line, 'type' => $type];
 	}
+	
 	
 	public function construct(): Method
 	{

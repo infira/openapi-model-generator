@@ -39,11 +39,10 @@ class Utils extends \Infira\console\helper\Utils
 	
 	public static function extractName(string $namespace): string
 	{
-		$ex = explode('\\', $namespace);
+		$ex = explode('\\', str_replace('/', '\\', $namespace));
 		
 		return end($ex);
 	}
-	
 	
 	public static function toPhpType(string $type): string
 	{
@@ -55,44 +54,38 @@ class Utils extends \Infira\console\helper\Utils
 		return $type;
 	}
 	
-	public static function makeParameterType(?string $argType, ?string $dataClass, bool $nullable): string
+	public static function makePhpTypes(string $typeStr, bool $extractClassName): array
 	{
-		if ($argType == 'singleClass') {
-			$argType = $dataClass;
-		}
-		else {
-			if ($dataClass) {
-				return '';
-			}
-			else {
-				$argType = self::toPhpType($argType);
-				if ($nullable and $argType) {
-					$argType = "?$argType";
-				}
-			}
+		$typeStr = trim($typeStr);
+		$types   = [];
+		if ($typeStr[0] == "?") {
+			$types[] = 'null';
+			$typeStr = substr($typeStr, 1);
 		}
 		
-		return $argType;
+		if ($typeStr[0] == '\\') {
+			$types[] = 'array';
+			$types[] = '\stdClass';
+			$types[] = $extractClassName ? self::extractName($typeStr) : $typeStr;
+		}
+		else {
+			$types[] = self::toPhpType($typeStr);
+		}
+		
+		return $types;
 	}
 	
-	public static function makeDocType(string $phpType, ?string $dataClass, bool $nullable): string
+	public static function isClassLike(string $str): bool
 	{
-		$docValueType = [];
-		if ($nullable) {
-			$docValueType[] = 'null';
-		}
-		if ($phpType == 'singleClass') {
-			$docValueType[] = $dataClass;
-		}
-		elseif ($dataClass) {
-			$docValueType[] = 'array';
-			$docValueType[] = '\stdClass';
-			$docValueType[] = $dataClass;
-		}
-		else {
-			$docValueType = [self::toPhpType($phpType)];
+		return (bool)preg_match('/\w+\\\\/m', $str);
+	}
+	
+	public static function extractClass(string $str): string
+	{
+		if ($str[0] == "?") {
+			$str = substr($str, 1);
 		}
 		
-		return join('|', $docValueType);
+		return sprintf('%s::class', self::extractName($str));
 	}
 }

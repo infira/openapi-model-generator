@@ -8,6 +8,7 @@ use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Response;
 use Infira\omg\helper\Utils;
 use Nette\PhpGenerator\PhpFile;
+use Infira\omg\generator\{SchemaArrayModel, SchemaBlankModel, SchemaObjectModel};
 
 abstract class Generator
 {
@@ -44,10 +45,9 @@ abstract class Generator
 	
 	protected $variables = [];
 	
-	public function __construct(string $namespace = '/', string $schemaLocation, string $tplClass)
+	public function __construct(string $namespace, string $schemaLocation, string $tplClass)
 	{
 		$this->setNamespace($namespace);
-		//debug($this->getNamespace(), $this->getClassName());
 		$this->schemaLocation = explode('\\', $this->getSchemaLocation($schemaLocation));
 		
 		
@@ -121,12 +121,7 @@ abstract class Generator
 			Omg::error('unknown reference');
 		}
 		
-		return '\\' . $this->getNamespace('/component', $type, ucfirst($this->extractName($ref)));
-	}
-	
-	protected final function extractName(string $from): string
-	{
-		return substr($from, strrpos(str_replace('\\', '/', $from), '/') + 1);
+		return '\\' . $this->getNamespace('/component', $type, ucfirst(Utils::extractName($ref)));
 	}
 	
 	private final function constructPath(string $rootPath, array $currentPath, string ...$parts): string
@@ -267,21 +262,9 @@ abstract class Generator
 		return str_replace('\\', '/', $this->constructPath('#', $this->schemaLocation, ...$parts));
 	}
 	
-	/**
-	 * @param string ...$parts
-	 * @see getNamespace
-	 * @return string
-	 */
-	protected final function getClassName(string ...$parts): string
+	protected final function getClassName(): string
 	{
-		if ($parts) {
-			$ar = explode('\\', $this->getNamespace(...$parts));
-			
-			return end($ar);
-		}
-		else {
-			return end($this->namespace);
-		}
+		return end($this->namespace);
 	}
 	
 	protected final function getFullClassPath(string ...$parts): string
@@ -297,7 +280,8 @@ abstract class Generator
 	 * @param string           $namespace
 	 * @param string           $schemaLocation
 	 * @param string|null      $type
-	 * @return \Infira\omg\generator\SchemaArrayModel|\Infira\omg\generator\SchemaBlankModel|\Infira\omg\generator\SchemaObjectModel
+	 * @throws \Exception
+	 * @return SchemaArrayModel|SchemaBlankModel|SchemaObjectModel
 	 */
 	protected final function getGenerator($bodySchema, string $namespace, string $schemaLocation, string $type = null)
 	{

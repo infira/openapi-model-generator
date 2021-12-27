@@ -77,11 +77,6 @@ class Operation extends ClassTemplate
 			$toResponse->addBodyLine('return $this->getResponse();');
 		}
 		
-		$success = $this->createMethod('success');
-		$success->setReturnType('self');
-		$success->addParameter('content');
-		$success->addBodyLine('return $this->setResponse(200, $content)');
-		
 		$setResponse = $this->createMethod('setResponse');
 		$setResponse->setReturnType('self');
 		$setResponse->addParameter('httpCode')->setType('int');

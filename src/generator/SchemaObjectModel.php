@@ -5,15 +5,16 @@ namespace Infira\omg\generator;
 use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Reference;
 use Infira\omg\Omg;
+use Infira\omg\templates\SchemaModel;
 
 /**
- * @property-read \Infira\omg\templates\SchemaObjectModel $tpl
+ * @property-read SchemaModel $tpl
  */
 class SchemaObjectModel extends ObjectTemplate
 {
 	public function __construct(string $namespace, string $schemaLocation)
 	{
-		parent::__construct($namespace, $schemaLocation, \Infira\omg\templates\SchemaObjectModel::class);
+		parent::__construct($namespace, $schemaLocation, SchemaModel::class);
 		$this->tpl->extendLib('RObject');
 	}
 	
@@ -67,13 +68,20 @@ class SchemaObjectModel extends ObjectTemplate
 					$propertyPhpType = $property->type;
 				}
 				
-				$bodyLines = [sprintf('$this->set(\'%s\', $value)', $propertyName), 'return $this'];
-				$this->tpl->addMethod('set' . ucfirst($propertyName), $propertyPhpType, $dataClass, 'value', $property->nullable, 'self', $property->description, $bodyLines);
+				$method = $this->tpl->createMethod('set' . ucfirst($propertyName));
+				$method->addParameters(['value' => $dataClass ?: $propertyPhpType]);
+				$method->addBodyLine(sprintf('$this->set(\'%s\', $value)', $propertyName), 'return $this');
+				$method->addComment($property->description);
+				$method->setReturnType('self', true);
 				
 				$this->tpl->addPropertyConfig($propertyName, $propertyPhpType, $dataClass, $schema, $property);
 				
-				$docPhpType = Omg::isMakeable($propertyPhpType) ? 'singleClass' : $propertyPhpType;
-				$this->tpl->addDocProperty($propertyName, $docPhpType, $dataClass, $property->nullable, $property->description);
+				$finalType = $propertyPhpType;
+				if ($dataClass) {
+					$finalType = $dataClass;
+				}
+				$finalType = $property->nullable === true ? "?$finalType" : $finalType;
+				$this->tpl->addDocPropertyComment($propertyName, $finalType, $property->description);
 				
 				unset($propertyPhpType);
 			}

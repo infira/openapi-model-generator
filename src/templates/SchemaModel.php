@@ -10,6 +10,28 @@ use Infira\omg\helper\Utils;
 
 class SchemaModel extends Objekt
 {
+	public function setArrayItemType(string $phpType, ?string $dataClass, Schema $item)
+	{
+		$this->addConstructorLine('$this->setItemConfig([%s]);', $this->makePropertyConfig($phpType, $dataClass, false, $item, $this->generator->getSchemaLocation()));
+		
+		$method = $this->createMethod('add');
+		$method->addBodyLine('$this->offsetSet(null, $item);', 'return $this;');
+		$method->addComment($item->description);
+		$method->addParameters(['item' => $dataClass ?: $phpType]);
+		$method->setReturnType('self', true);
+	}
+	
+	public function addPropertyConfig(string $name, string $phpType, ?string $dataClass, $schema, $property)
+	{
+		if ($dataClass) {
+			$this->import($dataClass);
+			$dataClass = Utils::extractName($dataClass);
+		}
+		$required = $schema->required && in_array($name, $schema->required);
+		$this->addConstructorLine('$this->properties[\'%s\'] = [%s];', $name, $this->makePropertyConfig($phpType, $dataClass, $required, $property, $this->generator->getSchemaLocation($name)));
+	}
+	
+	
 	protected function makePropertyConfig(string $phpType, ?string $dataClass, bool $required, Schema $property, string $schemaLocation): string
 	{
 		$propertyConf       = [];

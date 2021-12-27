@@ -9,6 +9,7 @@ use Infira\omg\Config;
 use Infira\omg\Omg;
 use cebe\openapi\spec\Schema;
 use Infira\omg\Generator;
+use Infira\omg\helper\Utils;
 
 /**
  * @property-read \Infira\omg\templates\PathOperation $tpl
@@ -199,8 +200,13 @@ class PathOperation extends Generator
 			$generator = $this->getGenerator($generateFrom, '../body/%className%Body', "requestBodies", 'auto');
 			$generator->tpl->addConstructorLine('$this->fillNonExistingWithDefaultValues = true;');
 			$generator->make();
-			$this->tpl->addConstructorLine('$this->%s = new %s;', Config::$operationInputParameterName, $generator->getFullClassPath());
-			$this->tpl->addDocProperty(Config::$operationInputParameterName, 'singleClass', $generator->getFullClassPath(), false, $description);
+			
+			$inputClass     = $generator->getFullClassPath();
+			$inputClassName = Utils::extractName($inputClass);
+			
+			$this->tpl->import($inputClass);
+			$this->tpl->addConstructorLine('$this->%s = new %s;', Config::$operationInputParameterName, $inputClassName);
+			$this->tpl->addDocPropertyComment(Config::$operationInputParameterName, $inputClassName, $description);
 			
 		}
 		

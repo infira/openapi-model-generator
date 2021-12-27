@@ -362,7 +362,7 @@ abstract class Storage
 	//endregion
 	
 	//region data helpers
-	private final function isDataObject(string $valueType): bool { return in_array($valueType, ['object', 'array']); }
+	private function isDataObject(string $valueType): bool { return in_array($valueType, ['object', 'array']); }
 	
 	protected function getItemRealDefaultValue(string $key, bool $voidArray = false, $undefinedDefaultValue = null)
 	{
@@ -389,7 +389,7 @@ abstract class Storage
 		}
 	}
 	
-	private final function setParent(&$parent, string $key)
+	private function setParent(&$parent, string $key)
 	{
 		$this->parent    = &$parent;
 		$this->parentKey = $key;
@@ -397,7 +397,7 @@ abstract class Storage
 	//endregion
 	
 	//region other helpers
-	private final function getErrorTrace(array $trace): array
+	private function getErrorTrace(array $trace): array
 	{
 		if ($this->parent !== null)
 		{

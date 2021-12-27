@@ -4,15 +4,16 @@ namespace Infira\omg\generator;
 
 use cebe\openapi\spec\Reference;
 use Infira\omg\Omg;
+use Infira\omg\templates\SchemaModel;
 
 /**
- * @property-read \Infira\omg\templates\SchemaArrayModel $tpl
+ * @property-read SchemaModel $tpl
  */
 class SchemaArrayModel extends ObjectTemplate
 {
 	public function __construct(string $namespace, string $schemaLocation)
 	{
-		parent::__construct($namespace, $schemaLocation, \Infira\omg\templates\SchemaArrayModel::class);
+		parent::__construct($namespace, $schemaLocation, SchemaModel::class);
 		$this->tpl->extendLib('RArray');
 	}
 	

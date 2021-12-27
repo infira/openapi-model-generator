@@ -73,6 +73,7 @@ class Omg
 		}
 	}
 	
+	//TODO miks seda vaja on?
 	public static function isMakeable(string $type): bool
 	{
 		return in_array($type, ['array', 'object']);
