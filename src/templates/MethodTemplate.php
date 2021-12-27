@@ -54,7 +54,7 @@ class MethodTemplate extends Magics
 		$this->method->setReturnType($type);
 		if ($addComment) {
 			$this->addComment(' ');
-			$this->addComment('@return %s', $type);
+			$this->addComment('@return %s', Utils::extractName($type));
 		}
 		
 		return $this;

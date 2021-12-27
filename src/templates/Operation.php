@@ -6,6 +6,7 @@ namespace Infira\omg\templates;
 use Nette\PhpGenerator\ClassType;
 use Infira\omg\Config;
 use Nette\PhpGenerator\Literal;
+use Infira\omg\Omg;
 
 class Operation extends ClassTemplate
 {
@@ -14,11 +15,10 @@ class Operation extends ClassTemplate
 		parent::__construct($class, $phpNamespace);
 		$this->class->setAbstract(true);
 		
-		$this->addProperty('method')->addComment('@var string')->setPrivate();
-		$this->addProperty('path')->addComment('@var string')->setPrivate();
-		$this->addProperty('operationID')->addComment('@var string')->setPrivate();
-		$this->addProperty('responses')->addComment('@var array')->setValue([])->setPrivate();
-		$this->addProperty('activeResponse')->addComment('@var null|\\stdClass')->setValue(null)->setPrivate();
+		$this->addPropertyType('method', '?string')->setPrivate();
+		$this->addPropertyType('path', '?string')->setPrivate();
+		$this->addPropertyType('operationID', '?string')->setPrivate();
+		$this->addPropertyType('activeResponse', '?\\stdClass')->setPrivate();
 		
 		if (Config::$laravel) {
 			$this->import('\Illuminate\Contracts\Support\Responsable', 'Responsable');
@@ -35,17 +35,9 @@ class Operation extends ClassTemplate
 		$constructor->addParameter('method')->setType('string')->setNullable(true);
 		$constructor->addParameter('path')->setType('string')->setNullable(true);
 		$constructor->addParameter('operationID')->setType('string')->setNullable(true);
-		$constructor->addEqBodyLine('$this->method', '$method');
-		$constructor->addEqBodyLine('$this->path', '$path');
-		$constructor->addEqBodyLine('$this->operationID', '$operationID');
-		
-		$registerResponse = $this->createMethod('registerResponse');
-		$registerResponse->setProtected();
-		$registerResponse->addParameter('httpCode')->setType('string');
-		$registerResponse->addParameter('class')->setType('string');
-		$registerResponse->addParameter('contentType')->setType('string');
-		$registerResponse->addEqBodyLine('$name', new Literal('"res$httpCode"'));
-		$registerResponse->addEqBodyLine('$this->responses[$name]', new Literal('[\'class\' => $class, \'httpCode\' => $httpCode, \'headers\' => [\'Content-Type\' => $contentType]]'));
+		$constructor->addEqBodyLine('$this->method', new Literal('$method'));
+		$constructor->addEqBodyLine('$this->path', new Literal('$path'));
+		$constructor->addEqBodyLine('$this->operationID', new Literal('$operationID'));
 		
 		$hasRequestBody = $this->createMethod('hasRequestBody');
 		$hasRequestBody->setFinal(true)->setReturnType('bool');
@@ -70,36 +62,34 @@ class Operation extends ClassTemplate
 		
 		if (Config::$laravel) {
 			$toResponse = $this->createMethod('toResponse');
+			$toResponse->setFinal(true);
 			$this->import('\Illuminate\Http\Request', 'Request');
-			$toResponse->addComment('@param Request $request');
-			$toResponse->addComment('@return Response');
+			$toResponse->addParamComment('request', 'Request');
+			$toResponse->setReturnType('\Symfony\Component\HttpFoundation\Response', true);
 			$toResponse->addParameter('request');
 			$toResponse->addBodyLine('return $this->getResponse();');
 		}
 		
 		$setResponse = $this->createMethod('setResponse');
-		$setResponse->setReturnType('self');
+		$setResponse->setProtected(true);
+		$setResponse->setReturnType('self', false);
 		$setResponse->addParameter('httpCode')->setType('int');
-		$setResponse->addParameter('content');
+		$setResponse->addParameter('content')->setType(Omg::getLibPath('Storage'));
+		$setResponse->addParameter('contentType')->setType('string');
 		$setResponse->setBody('if ($this->activeResponse) {
 	$this->error(\'active response is already set\');
 }
-$params                         = $this->getResponseParams($httpCode);
 $this->activeResponse           = new \stdClass();
 $this->activeResponse->httpCode = $httpCode;
-$this->activeResponse->headers  = $params[\'headers\'];
-
-if (!is_object($content)) {
-	$class   = $params[\'class\'];
-	$content = new $class($content);
-}
-$this->activeResponse->content = $content;
+$this->activeResponse->headers  = [\'Content-Type\' => $contentType];
+$this->activeResponse->content  = $content;
 
 
 return $this;');
 		
 		$getResponse = $this->createMethod('getResponse');
-		$getResponse->setReturnType('\Symfony\Component\HttpFoundation\Response');
+		$getResponse->setFinal(true);
+		$getResponse->setReturnType('\Symfony\Component\HttpFoundation\Response', false);
 		$getResponse->setBody('if (!$this->activeResponse) {
 	$this->error(\'Response not set\');
 }
@@ -117,6 +107,22 @@ $res = new Response(
 );
 
 return $res;');
+		
+		$getModel = $this->createMethod('getModel');
+		$param           = $getModel->addParameter('fill');
+		if (Config::$phpVersion > 7.3) {
+			$param->setType('array|object|null');
+		}
+		else {
+			$getModel->addParamComment('fill', 'array|object|null');
+		}
+		$getModel->addParameter('class')->setType('string');
+		$getModel->addBody('if (is_object($fill) AND $fill instanceof $class)
+{
+	return $fill;
+}
+
+return new $class($fill);');
 		
 		
 		$error = $this->createMethod('error');

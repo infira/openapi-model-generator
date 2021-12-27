@@ -245,7 +245,7 @@ class PathOperation extends Generator
 			$generator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
 			
 			$generator->make();
-			$this->registerHttpResponse($httpCode, $generator->getFullClassPath(), $contentType);
+			$this->tpl->registerHttpResponse($httpCode, $generator->getFullClassPath(), $contentType);
 		}
 	}
 	

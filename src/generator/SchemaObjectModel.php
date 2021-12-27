@@ -68,10 +68,9 @@ class SchemaObjectModel extends ObjectTemplate
 					$propertyPhpType = $property->type;
 				}
 				
-				$method = $this->tpl->createMethod('set' . ucfirst($propertyName));
+				$method = $this->tpl->createMethod('set' . ucfirst($propertyName), $property->description);
 				$method->addParameters(['value' => $dataClass ?: $propertyPhpType]);
 				$method->addBodyLine(sprintf('$this->set(\'%s\', $value)', $propertyName), 'return $this');
-				$method->addComment($property->description);
 				$method->setReturnType('self', true);
 				
 				$this->tpl->addPropertyConfig($propertyName, $propertyPhpType, $dataClass, $schema, $property);

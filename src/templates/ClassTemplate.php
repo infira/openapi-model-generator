@@ -8,6 +8,8 @@ use Nette\PhpGenerator\PhpFile;
 use Infira\omg\Generator;
 use Infira\omg\helper\Utils;
 use Infira\omg\Omg;
+use Infira\omg\Config;
+use Nette\PhpGenerator\Property;
 
 /**
  * @mixin ClassType
@@ -63,10 +65,13 @@ class ClassTemplate extends Magics
 		$this->addComment('@author https://github.com/infira/openapi-model-generator/tree/v2');
 	}
 	
-	public function createMethod(string $name)
+	public function createMethod(string $name, ?string $description = null)
 	{
-		$method          = $this->class->addMethod($name);
-		$method          = new MethodTemplate($method, $this);
+		$method = $this->class->addMethod($name);
+		$method = new MethodTemplate($method, $this);
+		if ($description) {
+			$method->addComment($description);
+		}
 		$this->methods[] = &$method;
 		
 		return $method;
@@ -87,6 +92,32 @@ class ClassTemplate extends Magics
 	public function addComment(string $format, string ...$values)
 	{
 		$this->class->addComment(vsprintf($format, $values));
+	}
+	
+	public function addPropertyType(string $name, string $type): Property
+	{
+		$prop     = $this->class->addProperty($name);
+		$nullable = $type[0] == '?';
+		
+		if ($type[0] == '?') {
+			$type = substr($type, 1);
+			if (Config::$phpVersion <= 7.3) {
+				$type = "null|$type";
+				$prop->setValue(null);
+			}
+		}
+		if (Config::$phpVersion > 7.3) {
+			
+			$prop->setType($type);
+			if ($nullable) {
+				$prop->setNullable(true);
+			}
+		}
+		else {
+			$prop->addComment('@var ' . $type);
+		}
+		
+		return $prop;
 	}
 	
 	public function addDocPropertyComment(string $name, string $docType, ?string $description)

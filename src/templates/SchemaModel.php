@@ -14,9 +14,8 @@ class SchemaModel extends Objekt
 	{
 		$this->addConstructorLine('$this->setItemConfig([%s]);', $this->makePropertyConfig($phpType, $dataClass, false, $item, $this->generator->getSchemaLocation()));
 		
-		$method = $this->createMethod('add');
+		$method = $this->createMethod('add', $item->description);
 		$method->addBodyLine('$this->offsetSet(null, $item);', 'return $this;');
-		$method->addComment($item->description);
 		$method->addParameters(['item' => $dataClass ?: $phpType]);
 		$method->setReturnType('self', true);
 	}
