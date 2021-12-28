@@ -41,7 +41,7 @@ class Register extends ClassTemplate
 ]', join(",\n", $lines))));
 		
 		$getOperation = $this->createMethod('getOperation');
-		$getOperation->setReturnType(Omg::getLibPath('Operation'))->setReturnNullable(true);
+		$getOperation->setReturnType(Omg::getOperationPath())->setReturnNullable(true);
 		$getOperation->setStatic(true);
 		$getOperation->addParameter('method')->setType('string');
 		$getOperation->addParameter('path')->setType('string');

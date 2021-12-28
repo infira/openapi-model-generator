@@ -86,7 +86,7 @@ class OmgCommand extends \Infira\console\Command
 			$this->error('Config is not loaded');
 		}
 		$this->api->validate();
-		$this->output->region('Specis validation errors', function ()
+		$this->output->region('Specs validation warnings/errors', function ()
 		{
 			$this->output->dumpArray($this->api->getErrors());
 		});

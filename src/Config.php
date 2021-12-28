@@ -15,6 +15,9 @@ class Config
 	public static $laravel                     = false;
 	public static $nullableDefaultNull         = true;//when object or property has nullable and default is not defined then handle default as null
 	public static $phpVersion                  = 7.3;
+	public static $httpStatusNameMap           = [];
+	public static $operationClass              = null;
+	public static $operationTraits             = [];
 	
 	public static function load(array $config)
 	{
@@ -39,5 +42,19 @@ class Config
 	public static function getRootNamespace(): string
 	{
 		return str_replace(['/', '\\\\'], '\\', self::$rootNamespace);
+	}
+	
+	public static function getHttpStatusName(string $statusCode): string
+	{
+		return self::$httpStatusNameMap[$statusCode] ?? $statusCode;
+	}
+	
+	public static function getOperationTraits(): array
+	{
+		if (!is_array(self::$operationTraits)) {
+			return [];
+		}
+		
+		return self::$operationTraits;
 	}
 }

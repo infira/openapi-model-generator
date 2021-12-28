@@ -109,6 +109,15 @@ class Omg
 		return Config::getRootNamespace() . '\\lib' . ($name ? "\\$name" : '');
 	}
 	
+	public static function getOperationPath(): string
+	{
+		if (Config::$operationClass) {
+			return Config::$operationClass;
+		}
+		
+		return self::getLibPath('Operation');
+	}
+	
 	public static function error(string $msg)
 	{
 		throw new \Exception($msg);

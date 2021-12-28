@@ -4,24 +4,27 @@ namespace Infira\omg\templates;
 
 
 use Infira\omg\helper\Utils;
+use Infira\omg\Config;
 
 class PathOperation extends Objekt
 {
 	public function registerHttpResponse(string $httpCode, string $class, string $contentType)
 	{
-		$methodName = "res$httpCode";
+		$statusName = Config::getHttpStatusName($httpCode);
 		
+		$methodName    = "res_$httpCode";
 		$comment       = "set response(httpCode=$httpCode)";
 		$httpCodeParam = $httpCode;
-		if ($httpCode == "200") {
-			$methodName = "success";
+		
+		if ($httpCode !== $statusName) {
+			$methodName = $statusName;
 		}
-		elseif ($httpCode == 'default') {
-			$methodName    = 'default';
+		$methodName = Utils::methodName($methodName);
+		if ($httpCode == 'default') {
 			$comment       = 'set response by $httpCode';
 			$httpCodeParam = '$httpCode';
 		}
-		$getMethodName = sprintf('get%sModel', ucfirst($methodName));
+		$getMethodName = sprintf('get%sModel', ucfirst($statusName));
 		$classType     = "?$class";
 		
 		$this->import($class);

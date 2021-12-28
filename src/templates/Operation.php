@@ -38,6 +38,7 @@ class Operation extends ClassTemplate
 		$constructor->addEqBodyLine('$this->method', Utils::literal('$method'));
 		$constructor->addEqBodyLine('$this->path', Utils::literal('$path'));
 		$constructor->addEqBodyLine('$this->operationID', Utils::literal('$operationID'));
+		$constructor->addEqBodyLine('$this->activeResponse', null);
 		
 		$hasRequestBody = $this->createMethod('hasRequestBody');
 		$hasRequestBody->setFinal(true)->setReturnType('bool');
@@ -77,7 +78,7 @@ class Operation extends ClassTemplate
 		$setResponse->addParameter('content')->setType(Omg::getLibPath('Storage'));
 		$setResponse->addParameter('contentType')->setType('string');
 		$setResponse->setBody('if ($this->activeResponse) {
-	$this->error(\'active response is already set\');
+	$this->tError(\'active response is already set\');
 }
 $this->activeResponse           = new \stdClass();
 $this->activeResponse->httpCode = $httpCode;
@@ -91,14 +92,14 @@ return $this;');
 		$getResponse->setFinal(true);
 		$getResponse->setReturnType('\Symfony\Component\HttpFoundation\Response', false);
 		$getResponse->setBody('if (!$this->activeResponse) {
-	$this->error(\'Response not set\');
+	$this->tError(\'Response not set\');
 }
 $body = null;
 if ($this->activeResponse->headers[\'Content-Type\'] == \'application/json\') {
 	$body = json_encode($this->activeResponse->content->getData());
 }
 else {
-	$this->error(\'Content type no implemented\');
+	$this->tError(\'Content type no implemented\');
 }
 $res = new Response(
 	$body,
@@ -120,7 +121,7 @@ return $res;');
 		$getModel->addParameter('class')->setType('string');
 		$getModel->addBody('if (is_callable($fill))
 {
-	return $fill(new $class(null));
+	return $fill(new $class());
 }
 elseif (is_object($fill) AND $fill instanceof $class)
 {
@@ -130,7 +131,8 @@ elseif (is_object($fill) AND $fill instanceof $class)
 return new $class($fill);');
 		
 		
-		$error = $this->createMethod('error');
+		$error = $this->createMethod('tError');
+		$error->setProtected(true);
 		$error->addParameter('msg')->setType('string');
 		$error->addBodyLine('throw new \Exception($msg)');
 	}
