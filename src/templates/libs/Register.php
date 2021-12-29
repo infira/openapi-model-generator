@@ -1,11 +1,12 @@
 <?php
 
-namespace Infira\omg\templates;
+namespace Infira\omg\templates\libs;
 
 
 use Nette\PhpGenerator\ClassType;
 use Infira\omg\Omg;
 use Infira\omg\helper\Utils;
+use Infira\omg\templates\ClassTemplate;
 
 class Register extends ClassTemplate
 {

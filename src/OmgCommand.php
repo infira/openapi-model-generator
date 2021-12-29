@@ -3,16 +3,17 @@
 namespace Infira\omg;
 
 use cebe\openapi\Reader;
-use cebe\openapi\spec\OpenApi;
-use Infira\omg\generator\ComponentResponse;
-use Infira\omg\generator\PathRegister;
 use Symfony\Component\Yaml\Yaml;
 use Infira\omg\helper\Tpl;
 use Infira\omg\generator\ComponentRequestBody;
 use Infira\Utils\Dir;
 use Symfony\Component\Console\Input\InputArgument;
 use Nette\PhpGenerator\PhpFile;
-use Infira\omg\templates\Operation;
+use Infira\omg\templates\libs\Operation;
+use cebe\openapi\spec\{Paths, Reference, Response as ResponseSepc, RequestBody, OpenApi};
+use Infira\omg\generator\PathRegister;
+use Infira\omg\templates\libs\Response;
+use Infira\omg\generator\ComponentResponse;
 
 class OmgCommand extends \Infira\console\Command
 {
@@ -92,24 +93,28 @@ class OmgCommand extends \Infira\console\Command
 		});
 	}
 	
+	/**
+	 * @throws \cebe\openapi\exceptions\UnresolvableReferenceException
+	 */
 	private function make()
 	{
 		Dir::flush(Config::$destination);
 		$ns = Omg::getLibPath();
-		Generator::makeFile('lib/RObject.php', Tpl::load('RObject.php', [
+		Generator::makeFile('lib/RObject.php', Tpl::load('libs/RObject.php', [
 			'namespace' => 'namespace ' . $ns . ';',
 		]));
 		
-		Generator::makeFile('lib/RArray.php', Tpl::load('RArray.php', [
+		Generator::makeFile('lib/RArray.php', Tpl::load('libs/RArray.php', [
 			'namespace' => 'namespace ' . $ns . ';',
 		]));
 		
-		Generator::makeFile('lib/Storage.php', Tpl::load('Storage.php', [
+		Generator::makeFile('lib/Storage.php', Tpl::load('libs/Storage.php', [
 			'rootNamespace' => $ns,
 			'namespace'     => 'namespace ' . $ns . ';',
 		]));
 		
 		$this->makeOperation();
+		$this->makeLibResponse();
 		
 		/*
 		Generator::makeFile('lib/Response.php', Tpl::load('Response.php', [
@@ -122,21 +127,47 @@ class OmgCommand extends \Infira\console\Command
 			if (!Omg::isMakeable($schema->type)) {
 				continue;
 			}
-			$generator = Omg::getGenerator($schema->type, "/component/schema/$name", "#/components/schemas/$name", $schema);
+			$generator = Omg::getGenerator($schema, "/components/schema/$name", "#/components/schemas/$name", $schema->type);
 			$generator->make();
 		}
 		
-		foreach ($this->api->components->requestBodies as $name => $requestBody) {
-			$componentResponseGenerator = new ComponentRequestBody($name);
-			$componentResponseGenerator->make($requestBody);
+		$this->makeComponentRequestBodies($this->api->components->requestBodies);
+		$this->makeComponentResponse($this->api->components->responses);
+		$this->makePathRegister($this->api->paths);
+	}
+	
+	/**
+	 * @param RequestBody[]|Reference[] $requests
+	 * @throws \cebe\openapi\exceptions\UnresolvableReferenceException
+	 * @return void
+	 */
+	private function makeComponentRequestBodies(array $requests)
+	{
+		foreach ($requests as $name => $request) {
+			$componentResponseGenerator = Omg::getGenerator($request->content[Omg::getContentType($request)]->schema, "/components/requestBodies/$name", "/components/requestBodies/$name");
+			$propertiesAreMandatory     = Config::$mandatoryResponseProperties ? 'true' : 'false';
+			$componentResponseGenerator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
+			$componentResponseGenerator->make();
 		}
 		
-		foreach ($this->api->components->responses as $name => $response) {
-			$componentResponseGenerator = new ComponentResponse($name);
-			$componentResponseGenerator->make($response);
+	}
+	
+	/**
+	 * @param ResponseSepc[] $responses
+	 * @return void
+	 */
+	private function makeComponentResponse(array $responses)
+	{
+		foreach ($responses as $name => $response) {
+			$generator = new ComponentResponse($name, $response);
+			$generator->make();
 		}
-		$pathRegisterGenerator = new PathRegister();
-		$pathRegisterGenerator->make($this->api->paths);
+	}
+	
+	private function makePathRegister(Paths $paths)
+	{
+		$generator = new PathRegister($paths);
+		$generator->make();
 	}
 	
 	private function makeOperation()
@@ -149,6 +180,18 @@ class OmgCommand extends \Infira\console\Command
 		$op->finalize();
 		
 		Generator::makeFile('lib/Operation.php', $pf->__toString());
+	}
+	
+	private function makeLibResponse()
+	{
+		$nss          = Omg::getLibPath();
+		$pf           = new PhpFile();
+		$ns           = $pf->addNamespace($nss);
+		$classPhpType = $pf->addClass("$nss\Response");
+		$res          = new Response($classPhpType, $ns);
+		$res->finalize();
+		
+		Generator::makeFile('lib/Response.php', $pf->__toString());
 	}
 	
 }

@@ -1,12 +1,13 @@
 <?php
 
-namespace Infira\omg\templates;
+namespace Infira\omg\templates\libs;
 
 
 use Nette\PhpGenerator\ClassType;
 use Infira\omg\Config;
 use Infira\omg\Omg;
 use Infira\omg\helper\Utils;
+use Infira\omg\templates\ClassTemplate;
 
 class Operation extends ClassTemplate
 {
@@ -96,7 +97,7 @@ return $this;');
 }
 $body = null;
 if ($this->activeResponse->headers[\'Content-Type\'] == \'application/json\') {
-	$body = json_encode($this->activeResponse->content->getData());
+	$body = json_encode($this->activeResponse->content->getData(true));
 }
 else {
 	$this->tError(\'Content type no implemented\');

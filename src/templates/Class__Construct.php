@@ -5,7 +5,7 @@ namespace Infira\omg\templates;
 
 use Nette\PhpGenerator\ClassType;
 
-class Objekt extends ClassTemplate
+class Class__Construct extends ClassTemplate
 {
 	/**
 	 * @var \Nette\PhpGenerator\Method

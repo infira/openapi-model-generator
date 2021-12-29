@@ -77,8 +77,11 @@ class ClassTemplate extends Magics
 		return $method;
 	}
 	
-	public function import(string $name, ?string $alias = null): self
+	public function import(?string $name, ?string $alias = null): self
 	{
+		if ($name === null) {
+			return $this;
+		}
 		if ($name[0] == '?') {
 			$name = substr($name, 1);
 		}
@@ -97,6 +100,12 @@ class ClassTemplate extends Magics
 		$path = Omg::getLibPath($libName);
 		$this->import($path, $libName);
 		$this->setExtends($path);
+	}
+	
+	public function extend(string $class, string $alias = null)
+	{
+		$this->import($class, $alias);
+		$this->setExtends($class);
 	}
 	
 	public function addComment(string $format, string ...$values)
@@ -136,4 +145,6 @@ class ClassTemplate extends Magics
 		$description = $description ?? '';
 		$this->addComment('@property %s $%s %s', $docType, $name, $description);
 	}
+	
+	public function beforeFinalize() {}
 }

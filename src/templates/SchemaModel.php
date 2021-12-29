@@ -8,14 +8,15 @@ use Infira\omg\Omg;
 use Infira\omg\Config;
 use Infira\omg\helper\Utils;
 
-class SchemaModel extends Objekt
+class SchemaModel extends Class__Construct
 {
 	public function setArrayItemType(string $phpType, ?string $dataClass, Schema $item)
 	{
-		$this->addConstructorLine('$this->setItemConfig([%s]);', $this->makePropertyConfig($phpType, $dataClass, false, $item, $this->generator->getSchemaLocation()));
+		$this->addConstructorLine('$this->setItemConfig([%s]);', $this->makePropertyConfig($phpType, $dataClass, false, $item, $this->generator->schemaLocation->get()));
 		
 		$method = $this->createMethod('add', $item->description);
 		$method->addBodyLine('$this->offsetSet(null, $item);', 'return $this;');
+		$this->import($dataClass);
 		$method->addParameters(['item' => $dataClass ?: $phpType]);
 		$method->setReturnType('self', true);
 	}
@@ -27,7 +28,7 @@ class SchemaModel extends Objekt
 			$dataClass = Utils::extractName($dataClass);
 		}
 		$required = $schema->required && in_array($name, $schema->required);
-		$this->addConstructorLine('$this->properties[\'%s\'] = [%s];', $name, $this->makePropertyConfig($phpType, $dataClass, $required, $property, $this->generator->getSchemaLocation($name)));
+		$this->addConstructorLine('$this->properties[\'%s\'] = [%s];', $name, $this->makePropertyConfig($phpType, $dataClass, $required, $property, $this->generator->schemaLocation->get($name)));
 	}
 	
 	

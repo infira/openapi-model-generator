@@ -6,44 +6,75 @@ namespace Infira\omg\templates;
 use Infira\omg\helper\Utils;
 use Infira\omg\Config;
 
-class PathOperation extends Objekt
+class PathOperation extends Class__Construct
 {
-	public function registerHttpResponse(string $httpCode, string $class, string $contentType)
+	public function registerHttpResponse(string $httpCode, string $responseClass, string $modelClass, string $contentType)
 	{
 		$statusName = Config::getHttpStatusName($httpCode);
 		$this->importLib('Storage');
 		
-		$methodName    = "res_$httpCode";
-		$comment       = "set response(httpCode=$httpCode)";
-		$httpCodeParam = $httpCode;
-		
+		$responseMethodName = "res_$httpCode";
 		if ($httpCode !== $statusName) {
-			$methodName = $statusName;
+			$responseMethodName = $statusName;
 		}
-		$methodName = Utils::methodName($methodName);
-		if ($httpCode == 'default') {
-			$comment       = 'set response by $httpCode';
-			$httpCodeParam = '$httpCode';
+		$responseMethodName = Utils::methodName($responseMethodName);
+		$getModelMethodName = sprintf('get%sModel', ucfirst($statusName));
+		
+		$this->createResponseMethod($httpCode, $responseClass, $contentType, $responseMethodName, $getModelMethodName);
+		$this->createModelMethod($getModelMethodName, $responseMethodName, $modelClass);
+	}
+	
+	public function createModelMethod(string $methodName, string $responseMethodName, string $modelClass)
+	{
+		$modelAlias = sprintf('%sModel', Utils::className($responseMethodName));
+		$types[]    = 'array';
+		$types[]    = '\stdClass';
+		$types[]    = 'callable';
+		$types[]    = 'string';
+		$this->import($modelClass, $modelAlias);
+		
+		
+		$method = $this->createMethod($methodName);
+		$method->addTypeParameter('fill', ...array_merge($types, [$modelClass]))->setDefaultValue(Utils::literal('Storage::NOT_SET'));
+		$method->setReturnType($modelClass, false);
+		$method->addBodyLine(sprintf('return $this->getModel($fill,%s);', Utils::extractClass($modelAlias)));
+		
+		if (Config::$phpVersion <= 7.3) {
+			//$method->addComment($comment);
+			$method->addParamComment('fill', ...array_merge($types, [$modelAlias]));
+			$method->setReturnType('self', true);
+			$method->addComment('@return %s', Utils::extractName($modelAlias));
 		}
-		$getMethodName = sprintf('get%sModel', ucfirst($statusName));
-		$classType     = "?$class";
 		
-		$this->import($class);
-		$this->addDocPropertyComment($methodName, Utils::extractName($class), "http code $httpCode class");
+	}
+	
+	public function createResponseMethod(string $httpCode, string $responseClass, string $contentType, string $methodName, string $getModelMethodName)
+	{
+		$httpCodeParam = $httpCode == 'default' ? '$httpCode' : $httpCode;
+		$comment       = $httpCode == 'default' ? 'set response by $httpCode' : "set response(httpCode=$httpCode)";
 		
-		$method = $this->createMethod($methodName, $comment);
-		$method->addBodyLine(sprintf('return $this->setResponse(%s, $this->%s($fill) ,\'%s\')', $httpCodeParam, $getMethodName, $contentType));
+		$responseAlias = sprintf('%sResponse', Utils::className($methodName));
+		$types[]       = 'array';
+		$types[]       = '\stdClass';
+		$types[]       = 'callable';
+		$types[]       = 'string';
+		$this->import($responseClass, $responseAlias);
+		
+		$method = $this->createMethod($methodName);
+		$method->addBodyLine(sprintf('return $this->setResponse(%s, $this->%s($fill) ,\'%s\')', $httpCodeParam, $getModelMethodName, $contentType));
 		if ($httpCode == 'default') {
 			$method->addTypeParameter('httpCode', 'int');
 		}
-		$param = $method->addTypeParameter('fill', $classType, true)->setDefaultValue(Utils::literal('Storage::NOT_SET'));
-		$param->setType($param->getType() . '|string');
-		$method->setReturnType('self', true);
 		
-		$getMethod = $this->createMethod($getMethodName);
-		$param     = $getMethod->addTypeParameter('fill', "$classType", true)->setDefaultValue(Utils::literal('Storage::NOT_SET'));
-		$param->setType($param->getType() . '|string');
-		$getMethod->setReturnType($class, true);
-		$getMethod->addBodyLine(sprintf('return $this->getModel($fill,%s);', Utils::extractClass($class)));
+		$method->addTypeParameter('fill', ...array_merge($types, [$responseClass]))->setDefaultValue(Utils::literal('Storage::NOT_SET'));
+		$rtComment = false;
+		if (Config::$phpVersion <= 7.3) {
+			$method->addComment($comment);
+			$method->addParamComment('fill', ...array_merge($types, [$responseAlias]));
+			$method->setReturnType('self', true);
+			$rtComment = true;
+		}
+		$method->setReturnType('self', $rtComment);
 	}
+	
 }

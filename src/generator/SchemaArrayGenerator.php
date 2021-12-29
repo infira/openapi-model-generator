@@ -4,17 +4,12 @@ namespace Infira\omg\generator;
 
 use cebe\openapi\spec\Reference;
 use Infira\omg\Omg;
-use Infira\omg\templates\SchemaModel;
 
-/**
- * @property-read SchemaModel $tpl
- */
-class SchemaArrayModel extends ObjectTemplate
+class SchemaArrayGenerator extends ObjectGenerator
 {
 	public function __construct(string $namespace, string $schemaLocation)
 	{
-		parent::__construct($namespace, $schemaLocation, SchemaModel::class);
-		$this->tpl->extendLib('RArray');
+		parent::__construct($namespace, $schemaLocation, 'RArray');
 	}
 	
 	public function make(): string
@@ -25,7 +20,7 @@ class SchemaArrayModel extends ObjectTemplate
 				$resolved = $schema->items->resolve();
 				$ref      = $schema->items->getReference();
 				if (Omg::isComponentRef($ref) and Omg::isMakeable($resolved->type)) {
-					$this->tpl->setArrayItemType($resolved->type, $this->getReferenceClassPath($ref), $resolved);
+					$this->tpl->setArrayItemType($resolved->type, Omg::getReferenceClassPath($ref), $resolved);
 				}
 				else {
 					$this->tpl->setArrayItemType($resolved->type, null, $resolved);

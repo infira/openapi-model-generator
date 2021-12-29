@@ -5,17 +5,12 @@ namespace Infira\omg\generator;
 use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Reference;
 use Infira\omg\Omg;
-use Infira\omg\templates\SchemaModel;
 
-/**
- * @property-read SchemaModel $tpl
- */
-class SchemaObjectModel extends ObjectTemplate
+class SchemaObjectGenerator extends ObjectGenerator
 {
 	public function __construct(string $namespace, string $schemaLocation)
 	{
-		parent::__construct($namespace, $schemaLocation, SchemaModel::class);
-		$this->tpl->extendLib('RObject');
+		parent::__construct($namespace, $schemaLocation, 'RObject');
 	}
 	
 	public function make(): string
@@ -32,7 +27,7 @@ class SchemaObjectModel extends ObjectTemplate
 					 */
 					$resolved = $property->resolve();
 					if (Omg::isMakeable($resolved->type) and Omg::isComponentRef($ref)) {
-						$dataClass = $this->getReferenceClassPath($ref);
+						$dataClass = Omg::getReferenceClassPath($ref);
 					}
 					$propertyPhpType = $resolved->type;
 					$property        = $resolved;
@@ -52,7 +47,7 @@ class SchemaObjectModel extends ObjectTemplate
 					}
 					$generator = $this->getPropertyModelGenerator('array', $property, $propertyName, $sloc);
 					$dataClass = $generator->getFullClassPath();
-					if (!Omg::isGenerated($generator->getNamespace())) {
+					if (!Omg::isGenerated($generator->ns->get())) {
 						$generator->make();
 					}
 					$propertyPhpType = 'array';
@@ -69,6 +64,7 @@ class SchemaObjectModel extends ObjectTemplate
 				}
 				
 				$method = $this->tpl->createMethod('set' . ucfirst($propertyName), $property->description);
+				$this->tpl->import($dataClass);
 				$method->addParameters(['value' => $dataClass ?: $propertyPhpType]);
 				$method->addBodyLine(sprintf('$this->set(\'%s\', $value)', $propertyName), 'return $this');
 				$method->setReturnType('self', true);
@@ -96,12 +92,12 @@ class SchemaObjectModel extends ObjectTemplate
 	 * @param string           $propertyName
 	 * @param string           $schemaLocation
 	 *
-	 * @return \Infira\omg\generator\SchemaArrayModel|\Infira\omg\generator\SchemaBlankModel|\Infira\omg\generator\SchemaObjectModel
+	 * @return \Infira\omg\generator\SchemaArrayGenerator|\Infira\omg\generator\SchemaBlankGenerator|\Infira\omg\generator\SchemaObjectGenerator
 	 */
 	private function getPropertyModelGenerator(string $type, $schema, string $propertyName, string $schemaLocation)
 	{
 		$propertyName = ucfirst($propertyName);
-		if (strpos($this->getNamespace("./../property/%className%$propertyName"), 'property\property') !== false) {
+		if (strpos($this->ns->get("./../property/%className%$propertyName"), 'property\property') !== false) {
 			$namespace = "../../property/%className%$propertyName";
 		}
 		else {

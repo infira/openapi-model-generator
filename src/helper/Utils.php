@@ -3,6 +3,7 @@
 namespace Infira\omg\helper;
 
 use Nette\PhpGenerator\Literal;
+use Infira\omg\Config;
 
 class Utils extends \Infira\console\helper\Utils
 {
@@ -36,5 +37,16 @@ class Utils extends \Infira\console\helper\Utils
 	public static function literal(string $value): Literal
 	{
 		return new Literal($value);
+	}
+	
+	public static function ns(string ...$parts): Ns
+	{
+		$ns = new Ns(Config::getRootNamespace(), '\\');
+		if ($parts) {
+			$parts[0] = str_replace('#/', '/', $parts[0]);
+			$ns->set(...$parts);
+		}
+		
+		return $ns;
 	}
 }

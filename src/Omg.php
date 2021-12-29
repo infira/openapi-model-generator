@@ -3,10 +3,12 @@
 namespace Infira\omg;
 
 use cebe\openapi\spec\Schema;
-use Infira\omg\generator\SchemaObjectModel;
-use Infira\omg\generator\SchemaArrayModel;
+use Infira\omg\generator\SchemaObjectGenerator;
+use Infira\omg\generator\SchemaArrayGenerator;
 use cebe\openapi\spec\Reference;
-use Infira\omg\generator\SchemaBlankModel;
+use Infira\omg\generator\SchemaBlankGenerator;
+use Infira\omg\helper\Utils;
+use cebe\openapi\spec\Response;
 
 class Omg
 {
@@ -28,24 +30,45 @@ class Omg
 	}
 	
 	/**
-	 * @param string                $namespace
-	 * @param string                $schemaLocation
-	 * @param string|null           $type
-	 * @param Reference|Schema|null $schema
-	 * @return \Infira\omg\generator\SchemaArrayModel|\Infira\omg\generator\SchemaBlankModel|\Infira\omg\generator\SchemaObjectModel
+	 * @param Reference|Schema $bodySchema
+	 * @param string           $namespace
+	 * @param string           $schemaLocation
+	 * @param string|null      $type if null it will be autodetect
+	 * @throws \Exception
+	 * @return SchemaArrayGenerator|SchemaBlankGenerator|SchemaObjectGenerator
 	 */
-	public static function getGenerator(?string $type, string $namespace, string $schemaLocation, $schema = null)
+	public static function getGenerator($bodySchema, string $namespace, string $schemaLocation, string $type = null)
 	{
+		if ($bodySchema and !($bodySchema instanceof Reference) and !($bodySchema instanceof Schema)) {
+			self::error('$bodySchema must be Reference or Schema ' . get_class($bodySchema) . ' was given');
+		}
+		$type = $type ?: self::getType($bodySchema);
+		
 		if ($type == 'object') {
-			$generator = new SchemaObjectModel($namespace, $schemaLocation);
+			$generator = new SchemaObjectGenerator($namespace, $schemaLocation);
 		}
 		elseif ($type == 'array') {
-			$generator = new SchemaArrayModel($namespace, $schemaLocation);
+			$generator = new SchemaArrayGenerator($namespace, $schemaLocation);
 		}
 		else {
-			$generator = new SchemaBlankModel($namespace, $schemaLocation);
+			$generator = new SchemaBlankGenerator($namespace, $schemaLocation);
 		}
-		$generator->setSchema($schema);
+		
+		if ($bodySchema and $bodySchema instanceof Reference) {
+			if (!self::isComponentRef($bodySchema->getReference())) {
+				self::notImplementedYet();
+			}
+			/*
+			if (self::isComponentSchema($bodySchema->getReference())) {
+				$generator->setSchema($bodySchema->resolve());
+			}
+			*/
+			$generator->tpl->setExtends(self::getReferenceClassPath($bodySchema->getReference()));
+		}
+		elseif ($bodySchema !== null) {
+			self::validateSchema($bodySchema);
+			$generator->setSchema($bodySchema);
+		}
 		
 		return $generator;
 	}
@@ -79,6 +102,11 @@ class Omg
 		return in_array($type, ['array', 'object']);
 	}
 	
+	public static function isComponentHeader(string $ref): bool
+	{
+		return strpos($ref, '#/components/headers/') !== false;
+	}
+	
 	public static function isComponentSchema(string $ref): bool
 	{
 		return strpos($ref, '#/components/schemas/') !== false;
@@ -99,9 +127,27 @@ class Omg
 		return (self::isComponentResponse($ref) or self::isComponentSchema($ref) or self::isComponentRequestBody($ref));
 	}
 	
+	public static function getReferenceClassPath(string $ref): string
+	{
+		if (self::isComponentResponse($ref)) {
+			$type = 'response';
+		}
+		elseif (self::isComponentSchema($ref)) {
+			$type = 'schema';
+		}
+		elseif (self::isComponentRequestBody($ref)) {
+			$type = 'requestBodies';
+		}
+		else {
+			self::error('unknown reference');
+		}
+		
+		return '\\' . Utils::ns()->get('/components', $type, ucfirst(Utils::extractName($ref)));
+	}
+	
 	public static function notImplementedYet()
 	{
-		Omg::error('this part of the code is not implemented yet');
+		self::error('this part of the code is not implemented yet');
 	}
 	
 	public static function getLibPath(string $name = ''): string
@@ -116,6 +162,47 @@ class Omg
 		}
 		
 		return self::getLibPath('Operation');
+	}
+	
+	/**
+	 * @param Reference|Response $resource
+	 * @throws \cebe\openapi\exceptions\UnresolvableReferenceException
+	 * @return string
+	 */
+	public static function getContentType($resource): string
+	{
+		if ($resource instanceof Reference) {
+			return self::getContentType($resource->resolve());
+		}
+		else//if ($resource instanceof Response)
+		{
+			return array_keys((array)$resource->content)[0];
+		}
+	}
+	
+	/**
+	 * @param Reference|Response|Schema $resource
+	 * @throws \cebe\openapi\exceptions\UnresolvableReferenceException
+	 * @return string
+	 */
+	public static function getType($resource): string
+	{
+		if ($resource instanceof Reference) {
+			return self::getType($resource->resolve());
+		}
+		elseif ($resource instanceof Schema and !isset($schema->properties)) {
+			return 'object';
+		}
+		else//if ($resource instanceof Response)
+		{
+			//addExtraErrorInfo('$resource', $resource);
+			return $resource->type;
+		}
+	}
+	
+	public static function getComponentResponseContentNsPart(): string
+	{
+		return "../content/%className%Content";
 	}
 	
 	public static function error(string $msg)

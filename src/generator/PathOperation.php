@@ -38,7 +38,7 @@ class PathOperation extends Generator
 		foreach ($templateParts as $part) {
 			$ns = array_merge($ns, $this->parseTemplatePart($part));
 		}
-		parent::__construct($this->getNamespace(...$ns), "/$path/$method", \Infira\omg\templates\PathOperation::class);
+		parent::__construct(Utils::ns(...$ns)->get(), "/$path/$method", \Infira\omg\templates\PathOperation::class);
 		//debug([$this->path => [Config::$pathNamespaceTemplate, $this->getFullClassPath()]]);
 		//debug('----------------------------------- THE END ----------------------------------------------------------------');
 		
@@ -220,59 +220,51 @@ class PathOperation extends Generator
 				$description  = $this->operation->requestBody->resolve()->descrtipion ?? '';
 			}
 			else {
-				$generateFrom = $this->operation->requestBody->content[$this->getContentType($this->operation->requestBody)]->schema;
+				$generateFrom = $this->operation->requestBody->content[Omg::getContentType($this->operation->requestBody)]->schema;
 				$description  = $this->operation->requestBody->description;
 			}
-			$generator = $this->getGenerator($generateFrom, '../body/%className%Body', "requestBodies", 'auto');
+			$generator = $this->getGenerator($generateFrom, '../body/%className%Body', "requestBodies");
 			$generator->tpl->addConstructorLine('$this->fillNonExistingWithDefaultValues = true;');
 			$generator->make();
 			
 			$inputClass     = $generator->getFullClassPath();
 			$inputClassName = Utils::extractName($inputClass);
 			
-			$this->tpl->import($inputClass);
+			$this->tpl->import($inputClass, $inputClassName);
 			$this->tpl->addConstructorLine('$this->%s = new %s;', Config::$operationInputParameterName, $inputClassName);
-			$this->tpl->addDocPropertyComment(Config::$operationInputParameterName, $inputClassName, $description);
+			$prop = $this->tpl->addPropertyType(Config::$operationInputParameterName, $inputClass);
+			if ($description) {
+				$prop->addComment($description);
+			}
 			
 		}
 		
 		//##################### Responses
 		/** @var Response $response */
 		foreach ($this->operation->responses as $httpCode => $response) {
-			$contentType = $this->getContentType($response);
-			if ($response instanceof Reference) {
-				$this->makeResponse($response, $httpCode, $contentType);
-			}
-			elseif ($response instanceof Response) {
-				$this->makeResponse($response->content[$contentType]->schema, $httpCode, $contentType);
-			}
-			else {
-				Omg::notImplementedYet();
-			}
+			$this->parseResponse($httpCode, $response);
 		}
 		
-		return $this->makeClass();
+		return parent::make();
 	}
 	
 	/**
-	 * @param Reference|Schema $bodySchema
-	 * @param string           $httpCode
-	 * @param string           $contentType
+	 * @param string                    $httpCode
+	 * @param Reference|Schema|Response $resource
+	 * @return void
 	 */
-	private function makeResponse($bodySchema, string $httpCode, string $contentType)
+	private function makeResponse(string $httpCode, $resource)
 	{
-		$ucHttpCode = ucfirst($httpCode);
-		if ($bodySchema instanceof Reference and Omg::isComponentRef($bodySchema->getReference())) {
-			$this->tpl->registerHttpResponse($httpCode, $this->getReferenceClassPath($bodySchema->getReference()), $contentType);
+		$generator = new PathResponse($this->ns->get('../responses/%className%' . $httpCode . 'Response'), $this->schemaLocation->get("$httpCode/response"));
+		if ($resource instanceof Reference) {
+			$generator->tpl->setExtends(Omg::getReferenceClassPath($resource->getReference()));
 		}
 		else {
-			$generator              = $this->getGenerator($bodySchema, '../content/%className%' . $ucHttpCode, "responses/$httpCode", 'auto');
-			$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
-			$generator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
-			
-			$generator->make();
-			$this->tpl->registerHttpResponse($httpCode, $generator->getFullClassPath(), $contentType);
+			//debug(get_class($resource));
 		}
+		//$generator->tpl->setExtends()
+		$generator->beforeMake($resource);
+		$generator->make();
 	}
 	
 	private function isPathVariable(string $part)
@@ -288,4 +280,63 @@ class PathOperation extends Generator
 		
 		return $var;
 	}
+	
+	/**
+	 * @param string                    $httpCode
+	 * @param Reference|Schema|Response $schema
+	 * @throws \Exception
+	 * @return string
+	 */
+	private function makeResponseBody(string $httpCode, $schema): string
+	{
+		$ucHttpCode             = ucfirst($httpCode);
+		$generator              = $this->getGenerator($schema, '../content/%className%' . $ucHttpCode, "responses/$httpCode");
+		$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
+		$generator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
+		$generator->make();
+		return $generator->getFullClassPath();
+	}
+	
+	public function parseResponse(string $httpCode, $resource)
+	{
+		$contentType = Omg::getContentType($resource);
+		if ($resource instanceof Reference and Omg::isComponentResponse($resource->getReference())) {
+			
+			$modelClass = Utils::ns($resource->getReference())->getFullClassPath(Omg::getComponentResponseContentNsPart());
+			$this->parseResponse($httpCode, $resource->resolve());
+			//debug(get_class($resource->resolve()));
+			//debug(Utils::ns($resource->getReference())->getFullClassPath(Omg::getComponentResponseContentNsPart()));
+		}
+		elseif ($resource instanceof Reference) {
+			addExtraErrorInfo('class', $resource->getReference());
+			Omg::error('un implemented');
+		}
+		elseif ($resource instanceof Response) {
+			$contentType = Omg::getContentType($resource);
+			$content     = $resource->content[$contentType]->schema;
+			//$className   = $this->makeResponseBody($httpCode, $resource);
+			
+			if ($content instanceof Reference) {
+				$modelClass = Omg::getReferenceClassPath($content->getReference());
+				$className   = $this->makeResponseBody($httpCode, $content->resolve());
+				$this->tpl->registerHttpResponse($httpCode, $className, $modelClass, $contentType);
+			}
+			else {
+				//debug($this->path, get_class($content));
+				
+				//debug(Utils::ns($content->getReference())->getFullClassPath(Omg::getComponentResponseContentNsPart()));
+				return;
+				$generator              = $this->getGenerator($content, Omg::getComponentResponseContentNsPart(), Omg::getComponentResponseContentNsPart());
+				$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
+				$generator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
+				$generator->make();
+				$this->setContentMethod($generator->getFullClassPath());
+			}
+		}
+		else {
+			debug(get_class($resource));
+		}
+		//$this->tpl->registerHttpResponse($httpCode, Omg::getReferenceClassPath($response->getReference()), Omg::getReferenceClassPath($response->getReference()), $contentType);
+	}
+	
 }

@@ -3,22 +3,28 @@
 namespace Infira\omg\generator;
 
 use cebe\openapi\spec\Paths;
-use Infira\omg\templates\Register;
+use Infira\omg\templates\libs\Register;
 
 /**
  * @property-read Register $tpl
  */
 class PathRegister extends \Infira\omg\Generator
 {
-	public function __construct()
+	/**
+	 * @var \cebe\openapi\spec\Paths
+	 */
+	private $paths;
+	
+	public function __construct(Paths $paths)
 	{
 		parent::__construct('/path/Register', 'register', Register::class);
+		$this->paths = $paths;
 	}
 	
-	public function make(Paths $paths)
+	public function make(): string
 	{
 		/** @var \cebe\openapi\spec\PathItem $def */
-		foreach ($paths as $path => $def) {
+		foreach ($this->paths as $path => $def) {
 			$operations = $def->getOperations();
 			foreach ($operations as $method => $operation) {
 				$operationGenerator = new PathOperation($path, $method, $operation);
@@ -27,6 +33,7 @@ class PathRegister extends \Infira\omg\Generator
 				$this->tpl->addPath($path, $method, $operationGenerator->getFullClassPath());
 			}
 		}
-		$this->makeClass();
+		
+		return parent::make();
 	}
 }
