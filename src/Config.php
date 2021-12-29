@@ -18,6 +18,7 @@ class Config
 	public static $httpStatusNameMap           = [];
 	public static $operationClass              = null;
 	public static $operationTraits             = [];
+	public static $operationImplements         = [];
 	
 	public static function load(array $config)
 	{
@@ -56,5 +57,14 @@ class Config
 		}
 		
 		return self::$operationTraits;
+	}
+	
+	public static function getOperationInterfaces(): array
+	{
+		if (!is_array(self::$operationImplements)) {
+			return [];
+		}
+		
+		return self::$operationImplements;
 	}
 }

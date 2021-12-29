@@ -55,7 +55,11 @@ class PathOperation extends Generator
 				$this->tpl->addTrait($trait);
 			}
 		}
-		
+		if ($traits = Config::getOperationInterfaces()) {
+			foreach ($traits as $trait) {
+				$this->tpl->addImplement($trait);
+			}
+		}
 	}
 	
 	private function parseTemplatePart(string $part)
@@ -83,18 +87,13 @@ class PathOperation extends Generator
 		}
 		elseif (preg_match('/(\w+)\((.+)\)/m', $part, $functionMatches)) {
 			$function = $functionMatches[1];
-			if (!in_array($function, ['generateName'])) {
+			if (!in_array($function, ['generateName', 'splitDotNames'])) {
 				Omg::error("Unknown template function('$function')");
 			}
+			//debug(['$functionMatches' => $functionMatches]);
 			$output = $this->parseTemplatePart($functionMatches[2]);
 			//			debug(['$functionMatches' => ['match' => $functionMatches, 'parts' => $output]]);
-			if ($function == 'generateName') {
-				foreach ($output as $ok => $p) {
-					$output[$ok] = ucfirst($p);
-				}
-				
-				return [join('', $output)];
-			}
+			$output = $this->parseTemplateFunction($function, $output);
 		}
 		elseif (preg_match('/(\w+)?(\[.*\])/m', $part, $varMatches)) {
 			//			debug(['$varMatches' => $varMatches]);
@@ -188,6 +187,28 @@ class PathOperation extends Generator
 		});
 		
 		return $parts;
+	}
+	
+	private function parseTemplateFunction(string $function, array $output): array
+	{
+		if ($function == 'generateName') {
+			return [Utils::methodName(join('_', $output))];
+		}
+		elseif ($function == 'splitDotNames') {
+			$newOutput = [];
+			foreach ($output as $p) {
+				$ex = explode('.', $p);
+				array_walk($ex, function (&$item)
+				{
+					$item = Utils::methodName($item);
+				});
+				$newOutput = array_merge($newOutput, $ex);
+			}
+			
+			return $newOutput;
+		}
+		
+		return $output;
 	}
 	
 	public function make(): string
