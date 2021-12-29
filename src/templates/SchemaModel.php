@@ -67,7 +67,7 @@ class SchemaModel extends Objekt
 			$propertyConf['def'] = $property->default;
 		}
 		else {
-			$this->import(Omg::getLibPath('Storage'), 'Storage');
+			$this->importLib('Storage');
 			$propertyConf['def'] = $unKnown;
 			if (Config::$nullableDefaultNull and $property->nullable) {
 				$propertyConf['def'] = null;

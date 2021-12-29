@@ -113,7 +113,7 @@ return $res;');
 		$getModel->setProtected(true);
 		$param = $getModel->addParameter('fill');
 		if (Config::$phpVersion > 7.3) {
-			$param->setType('array|object|null');
+			$param->setType('array|object|null|string');
 		}
 		else {
 			$getModel->addParamComment('fill', 'array|object|null');

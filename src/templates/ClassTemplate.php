@@ -77,12 +77,19 @@ class ClassTemplate extends Magics
 		return $method;
 	}
 	
-	public function import(string $name, ?string $alias = null)
+	public function import(string $name, ?string $alias = null): self
 	{
 		if ($name[0] == '?') {
 			$name = substr($name, 1);
 		}
 		$this->phpf->addUse($name, $alias);
+		
+		return $this;
+	}
+	
+	public function importLib(string $name): self
+	{
+		return $this->import(Omg::getLibPath($name), $name);
 	}
 	
 	public function extendLib(string $libName)

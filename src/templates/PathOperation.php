@@ -11,6 +11,7 @@ class PathOperation extends Objekt
 	public function registerHttpResponse(string $httpCode, string $class, string $contentType)
 	{
 		$statusName = Config::getHttpStatusName($httpCode);
+		$this->importLib('Storage');
 		
 		$methodName    = "res_$httpCode";
 		$comment       = "set response(httpCode=$httpCode)";
@@ -35,11 +36,13 @@ class PathOperation extends Objekt
 		if ($httpCode == 'default') {
 			$method->addTypeParameter('httpCode', 'int');
 		}
-		$method->addTypeParameter('fill', $classType, true)->setDefaultValue(null);
+		$param = $method->addTypeParameter('fill', $classType, true)->setDefaultValue(Utils::literal('Storage::NOT_SET'));
+		$param->setType($param->getType() . '|string');
 		$method->setReturnType('self', true);
 		
 		$getMethod = $this->createMethod($getMethodName);
-		$getMethod->addTypeParameter('fill', $classType, true)->setDefaultValue(null);
+		$param     = $getMethod->addTypeParameter('fill', "$classType", true)->setDefaultValue(Utils::literal('Storage::NOT_SET'));
+		$param->setType($param->getType() . '|string');
 		$getMethod->setReturnType($class, true);
 		$getMethod->addBodyLine(sprintf('return $this->getModel($fill,%s);', Utils::extractClass($class)));
 	}
