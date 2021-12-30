@@ -14,6 +14,7 @@ use cebe\openapi\spec\{Paths, Reference, Response as ResponseSepc, RequestBody, 
 use Infira\omg\generator\PathRegister;
 use Infira\omg\templates\libs\Response;
 use Infira\omg\generator\ComponentResponse;
+use Infira\omg\helper\Utils;
 
 class OmgCommand extends \Infira\console\Command
 {
@@ -179,7 +180,7 @@ class OmgCommand extends \Infira\console\Command
 		$op           = new Operation($classPhpType, $ns);
 		$op->finalize();
 		
-		Generator::makeFile('lib/Operation.php', $pf->__toString());
+		Generator::makeFile('lib/Operation.php', Utils::printNette($pf));
 	}
 	
 	private function makeLibResponse()
@@ -191,7 +192,7 @@ class OmgCommand extends \Infira\console\Command
 		$res          = new Response($classPhpType, $ns);
 		$res->finalize();
 		
-		Generator::makeFile('lib/Response.php', $pf->__toString());
+		Generator::makeFile('lib/Response.php', Utils::printNette($pf));
 	}
 	
 }

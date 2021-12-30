@@ -130,7 +130,7 @@ class Omg
 	public static function getReferenceClassPath(string $ref): string
 	{
 		if (self::isComponentResponse($ref)) {
-			$type = 'response';
+			$type = 'responses';
 		}
 		elseif (self::isComponentSchema($ref)) {
 			$type = 'schema';

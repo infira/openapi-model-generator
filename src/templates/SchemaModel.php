@@ -17,7 +17,7 @@ class SchemaModel extends Class__Construct
 		$method = $this->createMethod('add', $item->description);
 		$method->addBodyLine('$this->offsetSet(null, $item);', 'return $this;');
 		$this->import($dataClass);
-		$method->addParameters(['item' => $dataClass ?: $phpType]);
+		$method->addTypeParameter('item', $dataClass ?: $phpType);
 		$method->setReturnType('self', true);
 	}
 	

@@ -251,12 +251,16 @@ class PathOperation extends Generator
 	/**
 	 * @param string                    $httpCode
 	 * @param Reference|Schema|Response $resource
-	 * @return void
+	 * @throws \cebe\openapi\exceptions\UnresolvableReferenceException
+	 * @return \Infira\omg\generator\Response
 	 */
-	private function makeResponse(string $httpCode, $resource)
+	private function makeResponse(string $httpCode, $resource): \Infira\omg\generator\Response
 	{
-		$generator = new PathResponse($this->ns->get('../responses/%className%' . $httpCode . 'Response'), $this->schemaLocation->get("$httpCode/response"));
+		$statusName = Utils::className(Config::getHttpStatusName($httpCode));
+		$generator  = new \Infira\omg\generator\Response($this->ns->get('../responses/%className%' . $statusName . 'Response'), $this->schemaLocation->get("$httpCode/response"));
 		if ($resource instanceof Reference) {
+			//debug($resource->getReference());
+			Omg::notImplementedYet();
 			$generator->tpl->setExtends(Omg::getReferenceClassPath($resource->getReference()));
 		}
 		else {
@@ -265,11 +269,8 @@ class PathOperation extends Generator
 		//$generator->tpl->setExtends()
 		$generator->beforeMake($resource);
 		$generator->make();
-	}
-	
-	private function isPathVariable(string $part)
-	{
-		return preg_match('/\{(\w+)\}/m', $part);
+		
+		return $generator;
 	}
 	
 	private function extractPathVariableName(string $var): string
@@ -294,44 +295,35 @@ class PathOperation extends Generator
 		$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
 		$generator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
 		$generator->make();
+		
 		return $generator->getFullClassPath();
 	}
 	
-	public function parseResponse(string $httpCode, $resource)
+	public function parseResponse(string $httpCode, $resource, string $parentResponseClass = null)
 	{
 		$contentType = Omg::getContentType($resource);
 		if ($resource instanceof Reference and Omg::isComponentResponse($resource->getReference())) {
-			
-			$modelClass = Utils::ns($resource->getReference())->getFullClassPath(Omg::getComponentResponseContentNsPart());
-			$this->parseResponse($httpCode, $resource->resolve());
-			//debug(get_class($resource->resolve()));
-			//debug(Utils::ns($resource->getReference())->getFullClassPath(Omg::getComponentResponseContentNsPart()));
+			$responseClass = Omg::getReferenceClassPath($resource->getReference());
+			$this->parseResponse($httpCode, $resource->resolve(), $responseClass);
 		}
 		elseif ($resource instanceof Reference) {
 			addExtraErrorInfo('class', $resource->getReference());
-			Omg::error('un implemented');
+			Omg::notImplementedYet();
 		}
-		elseif ($resource instanceof Response) {
+		elseif ($resource instanceof Response and $parentResponseClass) {
 			$contentType = Omg::getContentType($resource);
 			$content     = $resource->content[$contentType]->schema;
-			//$className   = $this->makeResponseBody($httpCode, $resource);
-			
 			if ($content instanceof Reference) {
 				$modelClass = Omg::getReferenceClassPath($content->getReference());
-				$className   = $this->makeResponseBody($httpCode, $content->resolve());
-				$this->tpl->registerHttpResponse($httpCode, $className, $modelClass, $contentType);
+				$this->tpl->registerHttpResponse($httpCode, $parentResponseClass, $modelClass, $contentType);
 			}
 			else {
-				//debug($this->path, get_class($content));
-				
-				//debug(Utils::ns($content->getReference())->getFullClassPath(Omg::getComponentResponseContentNsPart()));
-				return;
-				$generator              = $this->getGenerator($content, Omg::getComponentResponseContentNsPart(), Omg::getComponentResponseContentNsPart());
-				$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
-				$generator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
-				$generator->make();
-				$this->setContentMethod($generator->getFullClassPath());
+				$this->tpl->registerHttpResponse($httpCode, $parentResponseClass, Utils::ns($parentResponseClass)->getFullClassPath(Omg::getComponentResponseContentNsPart()), $contentType);
 			}
+		}
+		elseif ($resource instanceof Response and !$parentResponseClass) {
+			$response = $this->makeResponse($httpCode, $resource);
+			$this->tpl->registerHttpResponse($httpCode, $response->getFullClassPath(), $response->getContentClass(), $contentType);
 		}
 		else {
 			debug(get_class($resource));

@@ -74,6 +74,7 @@ class Ns
 			$fullParts[$key] = $item;
 		}
 		$final = join($this->seperator, $fullParts);
+		$final = str_replace($rootPath . $this->seperator . $rootPath, $rootPath, $final);
 		$final = $this->cdNs($final);
 		
 		if (strpos($final, '.') !== false) {

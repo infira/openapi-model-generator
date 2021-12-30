@@ -90,9 +90,9 @@ class ClassTemplate extends Magics
 		return $this;
 	}
 	
-	public function importLib(string $name): self
+	public function importLib(string $name, string $alias = null): self
 	{
-		return $this->import(Omg::getLibPath($name), $name);
+		return $this->import(Omg::getLibPath($name), $alias ?: $name);
 	}
 	
 	public function extendLib(string $libName)

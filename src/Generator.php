@@ -96,7 +96,7 @@ abstract class Generator
 		$file = str_replace('\\', DIRECTORY_SEPARATOR, str_replace(Config::getRootNamespace() . '\\', '', $this->ns->get("../") . "\\$className.php"));
 		$this->tpl->finalize();
 		
-		return self::makeFile($file, $this->phpf->__toString());
+		return self::makeFile($file, Utils::printNette($this->phpf));
 	}
 	
 	//region namespace helpers

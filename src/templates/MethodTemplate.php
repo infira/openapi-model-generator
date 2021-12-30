@@ -68,39 +68,40 @@ class MethodTemplate extends Magics
 		$this->method->addComment(sprintf($format, ...$values));
 	}
 	
-	public function addParamComment(string $name, string ...$type)
+	public function addParamComment(string $name, string $type)
 	{
-		array_walk($type, function (&$type)
-		{
-			$type = Utils::toPhpType($type);
-		});
-		$this->addComment('@param %s $%s', join('|', $type), $name);
+		$this->addComment('@param %s $%s', Utils::toPhpType($type), $name);
 	}
 	
-	public function addParameters(array $parameters)
+	public function addTypeParameter(string $paramName, string $paramType, bool $addComment = true): Parameter
 	{
-		foreach ($parameters as $paramName => $paramType) {
-			$this->addTypeParameter($paramName, $paramType);
+		if (Utils::isClassLike($paramType)) {
+			return $this->addClassParameter($paramName, $paramType);
+		}
+		$paramType = Utils::toPhpType($paramType);
+		$param     = $this->method->addParameter($paramName);
+		$param->setType(Utils::toPhpType($paramType));
+		if ($addComment) {
 			$this->addParamComment($paramName, $paramType);
 		}
+		
+		return $param;
 	}
 	
-	/**
-	 * @param string       $paramName
-	 * @param string|array $paramType
-	 * @param bool         $addCallableType
-	 * @return \Nette\PhpGenerator\Parameter
-	 */
-	public function addTypeParameter(string $paramName, string ...$paramType): Parameter
+	public function addClassParameter(string $paramName, string $classType = null): Parameter
 	{
-		array_walk($paramType, function (&$type)
-		{
-			$type = Utils::toPhpType($type);
-		});
-		$param = $this->method->addParameter($paramName);
-		if (Config::$phpVersion > 7.3 or count($paramType) == 1) {
-			$param->setType(join('|', $paramType));
+		$types[] = 'array';
+		$types[] = '\stdClass';
+		$types[] = 'callable';
+		$types[] = 'string';
+		$param   = $this->method->addParameter($paramName, Utils::literal('Storage::NOT_SET'));
+		if (Config::$phpVersion > 7.3) {
+			$param->setType('mixed');
 		}
+		if ($classType) {
+			$types[] = $classType;
+		}
+		$this->addComment('@param %s $%s', join('|', $types), $paramName);
 		
 		return $param;
 	}

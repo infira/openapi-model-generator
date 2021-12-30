@@ -49,4 +49,11 @@ class Utils extends \Infira\console\helper\Utils
 		
 		return $ns;
 	}
+	
+	public static function printNette(object $file): string
+	{
+		$printer = new NettePrinter();
+		
+		return $printer->printFile($file);
+	}
 }

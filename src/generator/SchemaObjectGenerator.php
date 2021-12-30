@@ -65,7 +65,7 @@ class SchemaObjectGenerator extends ObjectGenerator
 				
 				$method = $this->tpl->createMethod('set' . ucfirst($propertyName), $property->description);
 				$this->tpl->import($dataClass);
-				$method->addParameters(['value' => $dataClass ?: $propertyPhpType]);
+				$method->addTypeParameter('value', $dataClass ?: $propertyPhpType);
 				$method->addBodyLine(sprintf('$this->set(\'%s\', $value)', $propertyName), 'return $this');
 				$method->setReturnType('self', true);
 				
