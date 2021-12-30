@@ -18,7 +18,7 @@ class SchemaModel extends Class__Construct
 		$method->addBodyLine('$this->offsetSet(null, $item);', 'return $this;');
 		$this->import($dataClass);
 		$method->addTypeParameter('item', $dataClass ?: $phpType);
-		$method->setReturnType('self', true);
+		$method->setReturnType('self', 'self');
 	}
 	
 	public function addPropertyConfig(string $name, string $phpType, ?string $dataClass, $schema, $property)

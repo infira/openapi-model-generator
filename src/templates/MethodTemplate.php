@@ -50,15 +50,16 @@ class MethodTemplate extends Magics
 		}
 	}
 	
-	public function setReturnType(string $type, $addComment = true): MethodTemplate
+	public function setReturnType(string $type, string $comment = null): MethodTemplate
 	{
 		$this->method->setReturnType($type);
-		if ($addComment) {
-			$this->addComment('@return %s', Utils::extractName($type));
+		if ($comment) {
+			$this->addReturnComment($comment);
 		}
 		
 		return $this;
 	}
+	
 	
 	public function addComment(?string $format, ...$values)
 	{
@@ -71,6 +72,11 @@ class MethodTemplate extends Magics
 	public function addParamComment(string $name, string $type)
 	{
 		$this->addComment('@param %s $%s', Utils::toPhpType($type), $name);
+	}
+	
+	public function addReturnComment(string $type)
+	{
+		$this->addComment('@return %s', $type);
 	}
 	
 	public function addTypeParameter(string $paramName, string $paramType, bool $addComment = true): Parameter

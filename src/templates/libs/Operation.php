@@ -62,7 +62,7 @@ class Operation extends ClassTemplate
 	{
 		$method = $this->createMethod('getResponse');
 		$method->setFinal(true);
-		$method->setReturnType('\Symfony\Component\HttpFoundation\Response', false);
+		$method->setReturnType('\Symfony\Component\HttpFoundation\Response', 'Response');
 		$method->setBody('if (!$this->activeResponse) {
 	$this->tError(\'Response not set\');
 }
@@ -80,8 +80,8 @@ return new Response($body, $this->activeResponse->getStatus(), $this->activeResp
 	{
 		$method = $this->createMethod('getModel');
 		$method->setProtected(true);
-		$method->addClassParameter('fill');
 		$method->addParameter('class')->setType('string');
+		$method->addClassParameter('fill');
 		$method->addBody('if (is_callable($fill)) {
 	return $fill(new $class());
 }
@@ -104,7 +104,7 @@ return new $class($fill);');
 	{
 		$method = $this->createMethod('setPathResponse');
 		$method->setProtected(true);
-		$method->setReturnType('self', false);
+		$method->setReturnType('self');
 		$method->addParameter('response')->setType(Omg::getLibPath('Response'));
 		$method->addBodyLine('$this->activeResponse = $response');
 		$method->addBodyLine('return $this');
@@ -117,7 +117,7 @@ return new $class($fill);');
 			$method->setFinal(true);
 			$this->import('\Illuminate\Http\Request', 'Request');
 			$method->addParamComment('request', 'Request');
-			$method->setReturnType('\Symfony\Component\HttpFoundation\Response', true);
+			$method->setReturnType('\Symfony\Component\HttpFoundation\Response', 'Response');
 			$method->addParameter('request');
 			$method->addBodyLine('return $this->getResponse();');
 		}
@@ -161,20 +161,20 @@ return new $class($fill);');
 	
 	private function createPathResponse()
 	{
-		$this->importLib('Response', 'PathResponse');
+		//$this->importLib('Response', 'PathResponse');
 		$method = $this->createMethod('createPathResponse');
 		$method->setProtected();
 		$method->addTypeParameter('status', 'string');
 		$method->addTypeParameter('responseClass', 'string');
-		$method->addTypeParameter('modelClass', 'string');
+		$method->addTypeParameter('model', 'object');
 		$method->addClassParameter('fill');
-		$method->setReturnType(Omg::getLibPath('Response'));
+		//$method->setReturnType(Omg::getLibPath('Response'),'PathResponse');
 		$method->setBody('if (is_object($fill) and $fill instanceof $responseClass) {
     $response = $fill;
 }
 else {
     $response = new $responseClass();
-    $response->setContent($this->getModel($fill, $modelClass));
+    $response->setContent($model);
 }
 $response->setStatus($status);
 

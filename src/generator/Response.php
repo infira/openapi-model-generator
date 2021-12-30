@@ -94,7 +94,7 @@ class Response extends Generator
 		$set->addBodyLine('parent::doSetContent($content)');
 		
 		$get = $this->tpl->createMethod('getContent');
-		$get->setReturnType('?' . $contentClass, false);
+		$get->setReturnType('?' . $contentClass);
 		$get->addBodyLine('return $this->doGetContent()');
 	}
 	

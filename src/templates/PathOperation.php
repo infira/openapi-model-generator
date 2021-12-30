@@ -17,45 +17,42 @@ class PathOperation extends Class__Construct
 		if ($httpCode !== $statusName) {
 			$responseMethodName = $statusName;
 		}
-		$responseMethodName = Utils::methodName($responseMethodName);
-		$getModelMethodName = sprintf('get%sModel', ucfirst($statusName));
+		$responseMethodName           = Utils::methodName($responseMethodName);
+		$getModelMethodName           = sprintf('get%sModel', ucfirst($statusName));
+		$createPathResponseMethodName = sprintf('create%sResponse', ucfirst($statusName));
 		
-		$this->createResponseMethod($httpCode, $responseClass, $responseMethodName, $getModelMethodName);
-		$this->createModelMethod($getModelMethodName, $responseMethodName, $modelClass);
-	}
-	
-	public function createResponseMethod(string $httpCode, string $responseClass, string $methodName, string $getModelMethodName)
-	{
-		$httpCodeParam = $httpCode == 'default' ? '$httpCode' : $httpCode;
+		$responseAlias = sprintf('%sResponse', Utils::className($responseMethodName));
+		$modelAlias    = sprintf('%sModel', Utils::className($responseMethodName));
+		$httpCodeParam = $httpCode == 'default' ? '$httpCode, ' : '';
 		$comment       = $httpCode == 'default' ? 'set response by $httpCode' : "set response(httpCode=$httpCode)";
 		
-		$modelAlias    = sprintf('%sModel', Utils::className($methodName));
-		$responseAlias = sprintf('%sResponse', Utils::className($methodName));
-		
-		$method = $this->createMethod($methodName, $comment);
-		$method->addBodyLine(sprintf('return $this->setPathResponse($this->createPathResponse(%s,%s::class,%s::class,$fill));', $httpCodeParam, $responseAlias, $modelAlias));
-		$method->addBodyLine();
+		$setResponseMethod = $this->createMethod($responseMethodName, $comment);
+		$setResponseMethod->addBodyLine(sprintf('return $this->setPathResponse($this->%s(%s$fill));', $createPathResponseMethodName, $httpCodeParam));
 		if ($httpCode == 'default') {
-			$method->addTypeParameter('httpCode', 'int');
+			$setResponseMethod->addTypeParameter('httpCode', 'int');
 		}
-		
 		$this->import($responseClass, $responseAlias);
-		$method->addClassParameter('fill', $responseAlias);
-		$method->setReturnType('self', true);
-	}
-	
-	public function createModelMethod(string $methodName, string $responseMethodName, string $modelClass)
-	{
-		$modelAlias = sprintf('%sModel', Utils::className($responseMethodName));
+		$setResponseMethod->addClassParameter('fill', $responseAlias);
+		$setResponseMethod->setReturnType('self', 'self');
+		
+		
+		$createPathResponse = $this->createMethod($createPathResponseMethodName, $comment);
+		$httpCodeParam      = $httpCode == 'default' ? '$httpCode' : $httpCode;
+		$createPathResponse->addBodyLine(sprintf('return $this->createPathResponse(%s,%s::class,$this->%s($fill));', $httpCodeParam, $responseAlias, $getModelMethodName));
+		if ($httpCode == 'default') {
+			$createPathResponse->addTypeParameter('httpCode', 'int');
+		}
+		$createPathResponse->addClassParameter('fill', $responseAlias);
+		$createPathResponse->setReturnType($responseClass, $responseAlias);
+		
 		
 		$this->import($modelClass, $modelAlias);
-		$method = $this->createMethod($methodName);
-		$method->addClassParameter('fill', $modelAlias);
-		$method->setReturnType($modelClass, false);
-		$method->addBodyLine(sprintf('return $this->getModel($fill,%s);', Utils::extractClass($modelAlias)));
-		$method->addComment('@return %s', Utils::extractName($modelAlias));
-		$method->setReturnType($modelClass, false);
-		
+		$getModelMethod = $this->createMethod($getModelMethodName);
+		$getModelMethod->addClassParameter('fill', $modelAlias);
+		$getModelMethod->setReturnType($modelClass);
+		$getModelMethod->addBodyLine(sprintf('return $this->getModel(%s, $fill);', Utils::extractClass($modelAlias)));
+		$getModelMethod->addReturnComment(Utils::extractName($modelAlias));
+		$getModelMethod->setReturnType($modelClass);
 	}
 	
 }
