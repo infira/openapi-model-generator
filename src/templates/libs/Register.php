@@ -5,8 +5,8 @@ namespace Infira\omg\templates\libs;
 
 use Nette\PhpGenerator\ClassType;
 use Infira\omg\Omg;
-use Infira\omg\helper\Utils;
 use Infira\omg\templates\ClassTemplate;
+use Infira\omg\Config;
 
 class Register extends ClassTemplate
 {
@@ -26,20 +26,15 @@ class Register extends ClassTemplate
 	
 	public function addPath(string $path, string $method, string $class)
 	{
-		$this->paths[] = ['path' => $path, 'method' => $method, 'class' => $class];
+		$this->paths[$path][$method] = $class;
 	}
 	
 	public function beforeFinalize()
 	{
-		$lines = [];
-		foreach ($this->paths as $path) {
-			$lines[] = sprintf('\'%s\' =>  [
-	\'%s\' => \'%s\'
-]', $path['path'], $path['method'], $path['class']);
+		$this->pathsProp->setValue($this->paths);
+		if (Config::$phpVersion > 7.3) {
+			$this->pathsProp->setType('array');
 		}
-		$this->pathsProp->setValue(Utils::literal(sprintf('[
-%s
-]', join(",\n", $lines))));
 		
 		$getOperation = $this->createMethod('getOperation');
 		$getOperation->setReturnType(Omg::getOperationPath())->setReturnNullable(true);
@@ -81,8 +76,10 @@ return self::$paths[$path][strtolower($method)];');
 		$getClasses->setReturnType('array');
 		$getClasses->setStatic(true);
 		$getClasses->setBody('$classes = [];
-foreach (self::$paths as $methods) {
-    $classes = array_merge($classes,array_values($methods));
+foreach (self::$paths as $path => $methods) {
+	foreach ($methods as $methodClass) {
+        $classes[] = $methodClass;
+	}
 }
 
 return $classes;');
