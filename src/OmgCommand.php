@@ -146,8 +146,6 @@ class OmgCommand extends \Infira\console\Command
 	{
 		foreach ($requests as $name => $request) {
 			$componentResponseGenerator = Omg::getGenerator($request->content[Omg::getContentType($request)]->schema, "/components/requestBodies/$name", "/components/requestBodies/$name");
-			$propertiesAreMandatory     = Config::$mandatoryResponseProperties ? 'true' : 'false';
-			$componentResponseGenerator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
 			$componentResponseGenerator->make();
 		}
 		

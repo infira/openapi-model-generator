@@ -123,10 +123,5 @@ abstract class Generator
 		return Omg::getGenerator($bodySchema, $this->ns->get($namespace), $this->schemaLocation->get($schemaLocation), $type);
 	}
 	
-	public function getComponentResponseContentNs(): string
-	{
-		return $this->ns->get("../content/%className%Content");
-	}
-	
 	//endregion
 }

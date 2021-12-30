@@ -216,23 +216,23 @@ class PathOperation extends Generator
 		//parse requests
 		if ($this->operation->requestBody) {
 			if ($this->operation->requestBody instanceof Reference) {
-				$generateFrom = $this->operation->requestBody;
 				$description  = $this->operation->requestBody->resolve()->descrtipion ?? '';
+				$requestClass = Omg::getReferenceClassPath($this->operation->requestBody->getReference());
 			}
 			else {
 				$generateFrom = $this->operation->requestBody->content[Omg::getContentType($this->operation->requestBody)]->schema;
 				$description  = $this->operation->requestBody->description;
+				
+				$generator = $this->getGenerator($generateFrom, '../body/%className%Body', "requestBodies");
+				$generator->tpl->addConstructorLine('$this->fillNonExistingWithDefaultValues = true;');
+				$generator->make();
+				$requestClass = $generator->getFullClassPath();
 			}
-			$generator = $this->getGenerator($generateFrom, '../body/%className%Body', "requestBodies");
-			$generator->tpl->addConstructorLine('$this->fillNonExistingWithDefaultValues = true;');
-			$generator->make();
+			$requestClassAlias = 'RequestInput';
 			
-			$inputClass     = $generator->getFullClassPath();
-			$inputClassName = Utils::extractName($inputClass);
-			
-			$this->tpl->import($inputClass, $inputClassName);
-			$this->tpl->addConstructorLine('$this->%s = new %s;', Config::$operationInputParameterName, $inputClassName);
-			$prop = $this->tpl->addPropertyType(Config::$operationInputParameterName, $inputClass);
+			$this->tpl->import($requestClass, $requestClassAlias);
+			$this->tpl->addConstructorLine('$this->%s = new %s;', Config::$operationInputParameterName, $requestClassAlias);
+			$prop = $this->tpl->addPropertyType(Config::$operationInputParameterName, $requestClass);
 			if ($description) {
 				$prop->addComment($description);
 			}
@@ -282,23 +282,6 @@ class PathOperation extends Generator
 		return $var;
 	}
 	
-	/**
-	 * @param string                    $httpCode
-	 * @param Reference|Schema|Response $schema
-	 * @throws \Exception
-	 * @return string
-	 */
-	private function makeResponseBody(string $httpCode, $schema): string
-	{
-		$ucHttpCode             = ucfirst($httpCode);
-		$generator              = $this->getGenerator($schema, '../content/%className%' . $ucHttpCode, "responses/$httpCode");
-		$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
-		$generator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
-		$generator->make();
-		
-		return $generator->getFullClassPath();
-	}
-	
 	public function parseResponse(string $httpCode, $resource, string $parentResponseClass = null)
 	{
 		$contentType = Omg::getContentType($resource);
@@ -326,9 +309,8 @@ class PathOperation extends Generator
 			$this->tpl->registerHttpResponse($httpCode, $response->getFullClassPath(), $response->getContentClass(), $contentType);
 		}
 		else {
-			debug(get_class($resource));
+			Omg::notImplementedYet();
 		}
-		//$this->tpl->registerHttpResponse($httpCode, Omg::getReferenceClassPath($response->getReference()), Omg::getReferenceClassPath($response->getReference()), $contentType);
 	}
 	
 }

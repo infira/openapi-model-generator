@@ -77,8 +77,6 @@ class Response extends Generator
 		}
 		else {
 			$generator              = $this->getGenerator($content, Omg::getComponentResponseContentNsPart(), Omg::getComponentResponseContentNsPart());
-			$propertiesAreMandatory = Config::$mandatoryResponseProperties ? 'true' : 'false';
-			$generator->tpl->addConstructorLine('$this->propertiesAreMandatory = ' . $propertiesAreMandatory . ';');
 			$generator->make();
 			$this->contentClass = $generator->getFullClassPath();
 		}
