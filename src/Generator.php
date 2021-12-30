@@ -480,7 +480,6 @@ abstract class Generator
 		{
 			$docValueType[] = 'array';
 			$docValueType[] = '\stdClass';
-			$docValueType[] = 'callable';
 			$docValueType[] = $dataClass;
 		}
 		else
