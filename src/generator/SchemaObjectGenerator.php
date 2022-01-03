@@ -5,6 +5,7 @@ namespace Infira\omg\generator;
 use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Reference;
 use Infira\omg\Omg;
+use Infira\console\helper\Utils;
 
 class SchemaObjectGenerator extends ObjectGenerator
 {
@@ -63,18 +64,21 @@ class SchemaObjectGenerator extends ObjectGenerator
 					$propertyPhpType = $property->type;
 				}
 				
+				$finalType = $propertyPhpType;
+				if ($dataClass) {
+					$finalType = $dataClass;
+				}
+				if ($finalType and Utils::isClassLike($finalType)) {
+					$this->tpl->import($finalType);
+				}
+				
 				$method = $this->tpl->createMethod('set' . ucfirst($propertyName), $property->description);
-				$this->tpl->import($dataClass);
-				$method->addTypeParameter('value', $dataClass ?: $propertyPhpType);
+				$method->addTypeParameter('value', $finalType);
 				$method->addBodyLine(sprintf('$this->set(\'%s\', $value)', $propertyName), 'return $this');
 				$method->setReturnType('self', 'self');
 				
 				$this->tpl->addPropertyConfig($propertyName, $propertyPhpType, $dataClass, $schema, $property);
 				
-				$finalType = $propertyPhpType;
-				if ($dataClass) {
-					$finalType = $dataClass;
-				}
 				$finalType = $property->nullable === true ? "?$finalType" : $finalType;
 				$this->tpl->addDocPropertyComment($propertyName, $finalType, $property->description);
 				

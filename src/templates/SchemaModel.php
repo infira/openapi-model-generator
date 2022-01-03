@@ -16,17 +16,18 @@ class SchemaModel extends Class__Construct
 		
 		$method = $this->createMethod('add', $item->description);
 		$method->addBodyLine('$this->offsetSet(null, $item);', 'return $this;');
-		$this->import($dataClass);
-		$method->addTypeParameter('item', $dataClass ?: $phpType);
+		
+		$finalType = $dataClass ?: $phpType;
+		
+		if ($finalType and Utils::isClassLike($finalType)) {
+			$this->import($finalType);
+		}
+		$method->addTypeParameter('item', $finalType);
 		$method->setReturnType('self', 'self');
 	}
 	
 	public function addPropertyConfig(string $name, string $phpType, ?string $dataClass, $schema, $property)
 	{
-		if ($dataClass) {
-			$this->import($dataClass);
-			$dataClass = Utils::extractName($dataClass);
-		}
 		$required = $schema->required && in_array($name, $schema->required);
 		$this->addConstructorLine('$this->properties[\'%s\'] = [%s];', $name, $this->makePropertyConfig($phpType, $dataClass, $required, $property, $this->generator->schemaLocation->get($name)));
 	}
@@ -38,7 +39,6 @@ class SchemaModel extends Class__Construct
 		$propertyConf['vt'] = Utils::toPhpType($phpType);
 		
 		if ($dataClass) {
-			$this->import($dataClass);
 			$dataClass = Utils::extractName($dataClass);
 		}
 		$propertyConf['dm'] = $dataClass ? "$dataClass::class" : 'null';

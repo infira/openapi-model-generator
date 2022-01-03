@@ -82,6 +82,9 @@ class ClassTemplate extends Magics
 		if ($name === null) {
 			return $this;
 		}
+		if (!Utils::isClassLike($name)) {
+			Omg::error('import must be class like', ['name' => $name]);
+		}
 		if ($name[0] == '?') {
 			$name = substr($name, 1);
 		}

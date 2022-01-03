@@ -27,12 +27,12 @@ class SchemaArrayGenerator extends ObjectGenerator
 				}
 			}
 			elseif ($schema->items->allOf) {
-				$generator = $this->getGenerator($schema->items, '../arrayItem/%className%', 'items', 'object');
+				$generator = $this->getGenerator($schema->items, '../arrayItem/%className%Item', 'items', 'object');
 				$generator->make();
 				$this->tpl->setArrayItemType('array', $generator->getFullClassPath(), $schema->items);
 			}
 			elseif ($schema->items->properties) {
-				$generator = $this->getGenerator($schema->items, '../arrayItem/%className%', '', 'object');
+				$generator = $this->getGenerator($schema->items, '../arrayItem/%className%Item', '', 'object');
 				$generator->make();
 				$this->tpl->setArrayItemType('object', $generator->getFullClassPath(), $schema->items);
 			}
