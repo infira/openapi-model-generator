@@ -62,7 +62,7 @@ abstract class RArray extends Storage implements \ArrayAccess, \Iterator
 	/**
 	 * @inheritDoc
 	 */
-	protected function getItemConfig(string $key, string $conf = null)
+	protected function getItemConfig(?string $key, string $conf = null)
 	{
 		if ($conf != null)
 		{

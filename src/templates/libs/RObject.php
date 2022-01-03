@@ -110,7 +110,7 @@ abstract class RObject extends Storage
 	/**
 	 * @inheritDoc
 	 */
-	protected function getItemConfig(string $key, string $conf = null)
+	protected function getItemConfig(?string $key, string $conf = null)
 	{
 		if (!$this->propertyExists($key))
 		{

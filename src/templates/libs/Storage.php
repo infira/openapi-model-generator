@@ -9,6 +9,7 @@ abstract class Storage
 	protected $propertiesAreMandatory           = false;
 	protected $fillNonExistingWithDefaultValues = false;
 	protected $filledValue                      = self::NOT_SET;
+	private   $itemValueParser                       = [];
 	
 	/**
 	 * @var \ArrayObject
@@ -69,30 +70,23 @@ abstract class Storage
 	
 	private function constructFinalData(?string $parentKey, bool $propertiesAreMandatory)
 	{
-		if ($this->filledValue !== self::NOT_SET)
-		{
+		if ($this->filledValue !== self::NOT_SET) {
 			return $this->filledValue;
 		}
 		$output = [];
-		foreach ($this->storage as $key => $item)
-		{
-			if ($this->isDataObject($item['vt']))
-			{
-				if ($item['io'] == true)
-				{
+		foreach ($this->storage as $key => $item) {
+			if ($this->isDataObject($item['vt'])) {
+				if ($item['io'] == true) {
 					$outputItem = $item['rv'];
 				}
-				elseif ($item['rv']->parent)
-				{
+				elseif ($item['rv']->parent) {
 					$outputItem = $item['rv']->constructFinalData(null, $propertiesAreMandatory);
 				}
-				else
-				{
+				else {
 					$outputItem = $item['rv']->constructFinalData($key, $propertiesAreMandatory);
 				}
 			}
-			else
-			{
+			else {
 				$outputItem = $item['rv'];
 			}
 			$output[$key] = $outputItem;
@@ -108,54 +102,42 @@ abstract class Storage
 	 */
 	public function fill($filler): self
 	{
-		if ($filler === self::NOT_SET)
-		{
+		if ($filler === self::NOT_SET) {
 			return $this;
 		}
-		if ($filler === null)
-		{
-			if (!$this->nullable)
-			{
+		if ($filler === null) {
+			if (!$this->nullable) {
 				$this->error('filler cannot be null');
 			}
 			$this->filledValue = null;
 		}
-		if (empty($filler))
-		{
+		if (empty($filler)) {
 			return $this;
 		}
-		if ($filler instanceof \stdClass)
-		{
+		if ($filler instanceof \stdClass) {
 			$finalFiller = (array)$filler;
 		}
-		elseif (is_array($filler))
-		{
+		elseif (is_array($filler)) {
 			$finalFiller = $filler;
 		}
-		elseif (is_object($filler) and $filler instanceof Storage)
-		{
+		elseif (is_object($filler) and $filler instanceof Storage) {
 			$finalFiller = $filler->getData(false);
 		}
-		else
-		{
+		else {
 			$this->error("filler must be one of types[array,stdClass,RObject,RArray] type('" . $this->getPhpType($filler) . "' was given");
 		}
 		
-		if (!isset($finalFiller))
-		{
+		if (!isset($finalFiller)) {
 			$this->error('$finalFiller NOT set');
 		}
 		
-		if (!is_array($finalFiller))
-		{
+		if (!is_array($finalFiller)) {
 			$this->error('filler must be array');
 		}
 		
 		$this->validateFiller($finalFiller);
-		foreach ($finalFiller as $key => $value)
-		{
-			if ($this->amiObject() and !$this->propertyExists($key))
-			{
+		foreach ($finalFiller as $key => $value) {
+			if ($this->amiObject() and !$this->propertyExists($key)) {
 				continue;
 			}
 			$this->set($key, $value);
@@ -169,39 +151,42 @@ abstract class Storage
 		$this->validateKey($key);
 		$itemValueType = $this->getItemValueType($this->amiArray() ? self::NOT_SET : $key);
 		
-		if ($this->exists($key))
-		{
+		if ($this->exists($key)) {
 			return $this->storage[$key]['rv'];
 		}
 		
-		if ($this->isDataObject($itemValueType))
-		{
+		if ($this->isDataObject($itemValueType)) {
 			$cls = $this->createItemDataModel($key);
 			$rv  = &$cls;
 		}
-		elseif ($this->getItemIsNullable($key))
-		{
+		elseif ($this->getItemIsNullable($key)) {
 			$rv = null;
 		}
-		elseif ($this->getItemDefaultValue($key) !== self::NOT_SET)
-		{
+		elseif ($this->getItemDefaultValue($key) !== self::NOT_SET) {
 			$rv = $this->getItemDefaultValue($key);
 		}
-		else
-		{
+		else {
 			$this->error('trying to retrieve value which does not exists', $key);
 		}
 		
-		if ($this->isDataObject($itemValueType))
-		{
+		if ($this->isDataObject($itemValueType)) {
 			$this->storage->offsetSet($key, ['vt' => $itemValueType, 'rv' => $rv, 'io' => false]);
 		}
-		else
-		{
+		else {
 			$this->storage->offsetSet($key, ['vt' => $itemValueType, 'rv' => $rv]);
 		}
 		
 		return $this->storage[$key]['rv'];
+	}
+	
+	public function addItemValueParser(callable $parser, string $key = null)
+	{
+		if ($key === null) {
+			$this->itemValueParser['general'][] = $parser;
+		}
+		else {
+			$this->itemValueParser['byKeys'][$key] = $parser;
+		}
 	}
 	
 	public function set(string $key, $value)
@@ -212,113 +197,99 @@ abstract class Storage
 		$itemConfig     = $this->getItemConfig($key);
 		$itemIsNullable = $this->getItemIsNullable($key);
 		
+		if (isset($this->itemValueParser[$key])) {
+			$c     = $this->itemValueParser[$key];
+			$value = $c($value, $itemConfig);
+		}
+		if (isset($this->itemValueParser['general'])) {
+			foreach ($this->itemValueParser['general'] as $parser) {
+				$value = $parser($value, $itemConfig);
+			}
+		}
+		
 		
 		//region item value validation
-		if ($value === null)
-		{
-			if (!$itemIsNullable)
-			{
+		if ($value === null) {
+			if (!$itemIsNullable) {
 				$this->error('value cannot be null', $key);
 			}
 		}
-		elseif ($this->isItemEnum($key))
-		{
+		elseif ($this->isItemEnum($key)) {
 			$enum = $this->getItemEnum($key);
-			if (!in_array($value, $enum, true))
-			{
+			if (!in_array($value, $enum, true)) {
 				$this->error('allowed values are [' . join(', ', $enum) . "], '$value' was given ", $key);
 			}
 		}
-		elseif (in_array($itemValueType, ['int', 'float']) and (is_numeric($value) or $value == ''))
-		{
+		elseif (in_array($itemValueType, ['int', 'float']) and (is_numeric($value) or $value == '')) {
 			$f = $itemValueType . 'val';
 			
 			$value = $f($value);
 			
-			if (array_key_exists('min', $itemConfig) and $value < $itemConfig['min'])
-			{
+			if (array_key_exists('min', $itemConfig) and $value < $itemConfig['min']) {
 				$min = $itemConfig['min'];
 				$this->error("value must be >= $min, $value was given", $key);
 			}
-			if (array_key_exists('max', $itemConfig) and $value > $itemConfig['max'])
-			{
+			if (array_key_exists('max', $itemConfig) and $value > $itemConfig['max']) {
 				$max = $itemConfig['max'];
 				$this->error("value must be <= $max, $value was given", $key);
 			}
 		}
-		elseif ($itemValueType == 'bool' and is_numeric($value) and ($value == 1 or $value == 0 or $value == ''))
-		{
+		elseif ($itemValueType == 'bool' and is_numeric($value) and ($value == 1 or $value == 0 or $value == '')) {
 			$value = $value == 1;
 		}
-		elseif ($itemValueType == 'string')
-		{
+		elseif ($itemValueType == 'string') {
 			$value = "$value";
 		}
-		elseif ($itemValueType != $realType and in_array($itemValueType, ['object', 'array']))
-		{
-			if (is_object($value) and $value instanceof \stdClass)
-			{
+		elseif ($itemValueType != $realType and in_array($itemValueType, ['object', 'array'])) {
+			if (is_object($value) and $value instanceof \stdClass) {
 				$value = (array)$value;
 			}
-			elseif (is_object($value) and !$this->isItemDataModel($key, $value))
-			{
+			elseif (is_object($value) and !$this->isItemDataModel($key, $value)) {
 				$this->error("can take only " . $this->getItemDataModelClassName($key) . ' objects', $key);
 			}
-			elseif (is_array($value) and gettype(array_key_first($value)) != 'string' and $itemValueType == 'object')
-			{
+			elseif (is_array($value) and gettype(array_key_first($value)) != 'string' and $itemValueType == 'object') {
 				$this->error("object can take only associative array", $key);
 			}
-			elseif (is_array($value) and gettype(array_key_first($value)) == 'string' and $itemValueType == 'array')
-			{
+			elseif (is_array($value) and gettype(array_key_first($value)) == 'string' and $itemValueType == 'array') {
 				$this->error("can take only sequential array", $key);
 			}
 		}
-		elseif ($itemValueType != $realType)
-		{
+		elseif ($itemValueType != $realType) {
 			$this->error("value must be type('$itemValueType') type('$realType') was given", $key);
 		}
 		//endregion
 		
-		if ($this->isDataObject($itemValueType))
-		{
+		if ($this->isDataObject($itemValueType)) {
 			$io = false; //is override
-			if (is_object($value) and $this->isItemDataModel($key, $value))
-			{
+			if (is_object($value) and $this->isItemDataModel($key, $value)) {
 				$cls = $value;
 				$cls->setParent($this, $key);
 				$rv = &$cls;
 			}
-			elseif ($value === null and $itemIsNullable)
-			{
+			elseif ($value === null and $itemIsNullable) {
 				$rv = null;
 				$io = true;
 			}
-			elseif ((is_object($value) and $value instanceof \stdClass) or is_array($value))
-			{
+			elseif ((is_object($value) and $value instanceof \stdClass) or is_array($value)) {
 				$rv = $this->createItemDataModel($key, (array)$value);
 			}
-			else
-			{
+			else {
 				$this->error('not implemented');
 			}
 			
-			if (!$this->exists($key))
-			{
+			if (!$this->exists($key)) {
 				$this->storage->offsetSet($key, ['vt' => $itemValueType]);
 			}
 			$this->storage[$key]['rv'] = $rv;
 			$this->storage[$key]['io'] = $io;
 		}
-		elseif (!$this->exists($key))
-		{
+		elseif (!$this->exists($key)) {
 			$this->storage->offsetSet($key, ['vt' => $itemValueType, 'rv' => $value]);
 		}
-		elseif ($this->exists($key))
-		{
+		elseif ($this->exists($key)) {
 			$this->storage[$key]['rv'] = $value;
 		}
-		else
-		{
+		else {
 			$this->error('not implemented');
 		}
 	}
@@ -366,22 +337,17 @@ abstract class Storage
 	
 	protected function getItemRealDefaultValue(string $key, bool $voidArray = false, $undefinedDefaultValue = null)
 	{
-		if ($this->getItemDefaultValue($key) !== self::NOT_SET)
-		{
+		if ($this->getItemDefaultValue($key) !== self::NOT_SET) {
 			return $this->getItemDefaultValue($key);
 		}
-		elseif ($this->getItemIsNullable($key))
-		{
+		elseif ($this->getItemIsNullable($key)) {
 			return null;
 		}
-		elseif ($this->getItemValueType($key) == 'array' and !$voidArray)
-		{
+		elseif ($this->getItemValueType($key) == 'array' and !$voidArray) {
 			return [];
 		}
-		else
-		{
-			if ($undefinedDefaultValue === null)
-			{
+		else {
+			if ($undefinedDefaultValue === null) {
 				$this->error('undefined real default value');
 			}
 			
@@ -389,7 +355,7 @@ abstract class Storage
 		}
 	}
 	
-	private function setParent(&$parent, string $key)
+	private function setParent(&$parent, string $key = null)
 	{
 		$this->parent    = &$parent;
 		$this->parentKey = $key;
@@ -399,14 +365,12 @@ abstract class Storage
 	//region other helpers
 	private function getErrorTrace(array $trace): array
 	{
-		if ($this->parent !== null)
-		{
+		if ($this->parent !== null) {
 			$trace[] = ($this->parent->amiArray() ? "[$this->parentKey]" : "->$this->parentKey");
 			
 			return $this->parent->getErrorTrace($trace);
 		}
-		else
-		{
+		else {
 			$trace[] = get_class($this);
 		}
 		
@@ -416,8 +380,7 @@ abstract class Storage
 	protected function error(string $msg, string $key = null)
 	{
 		$traceArr = array_reverse($this->getErrorTrace([]));
-		if ($key)
-		{
+		if ($key) {
 			$traceArr[] = $this->amiArray() ? "[$key]" : "->$key";
 		}
 		$trace = join('', $traceArr);
@@ -437,8 +400,7 @@ abstract class Storage
 	{
 		$type         = gettype($value);
 		$convertTypes = ['integer' => 'int', 'number' => 'float', 'boolean' => 'bool'];
-		if (isset($convertTypes[$type]))
-		{
+		if (isset($convertTypes[$type])) {
 			return $convertTypes[$type];
 		}
 		
@@ -472,7 +434,7 @@ abstract class Storage
 		return $this->getItemConfig($key, 'def');
 	}
 	
-	protected function getItemDataModelClassName(string $key): ?string
+	protected function getItemDataModelClassName(string $key = null): ?string
 	{
 		return $this->getItemConfig($key, 'dm');
 	}
@@ -490,7 +452,7 @@ abstract class Storage
 	 * @param string|null $conf
 	 * @return array|string
 	 */
-	protected abstract function getItemConfig(string $key, string $conf = null);
+	protected abstract function getItemConfig(?string $key, string $conf = null);
 	
 	//endregion
 }
