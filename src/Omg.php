@@ -190,8 +190,19 @@ class Omg
 		if ($resource instanceof Reference) {
 			return self::getType($resource->resolve());
 		}
-		elseif ($resource instanceof Schema and !isset($schema->properties)) {
-			return 'object';
+		elseif ($resource instanceof Schema) {
+			if (isset($resource->type)) {
+				return $resource->type;
+			}
+			if (isset($resource->items)) {
+				return 'array';
+			}
+			if (isset($resource->properties)) {
+				return 'object';
+			}
+			addExtraErrorInfo('schema', $resource);
+			self::error('unknown type');
+			
 		}
 		else//if ($resource instanceof Response)
 		{
@@ -205,8 +216,11 @@ class Omg
 		return "../content/%className%Content";
 	}
 	
-	public static function error(string $msg)
+	public static function error(string $msg, array $extraData = [])
 	{
+		if ($extraData) {
+			addExtraErrorInfo($extraData);
+		}
 		throw new \Exception($msg);
 	}
 }
