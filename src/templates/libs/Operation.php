@@ -166,7 +166,7 @@ return new $class($fill);');
 		$method->setProtected();
 		$method->addTypeParameter('status', 'string');
 		$method->addTypeParameter('responseClass', 'string');
-		$method->addTypeParameter('model', 'object');
+		$method->addTypeParameter('modelClass', 'string');
 		$method->addClassParameter('fill');
 		//$method->setReturnType(Omg::getLibPath('Response'),'PathResponse');
 		$method->setBody('if (is_object($fill) and $fill instanceof $responseClass) {
@@ -174,7 +174,7 @@ return new $class($fill);');
 }
 else {
     $response = new $responseClass();
-    $response->setContent($model);
+    $response->setContent($this->getModel($modelClass, $fill));
 }
 $response->setStatus($status);
 

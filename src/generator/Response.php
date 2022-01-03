@@ -7,7 +7,6 @@ use cebe\openapi\spec\Reference;
 use cebe\openapi\spec\{Response as ResponseSepc, Schema, Header};
 use Infira\omg\Omg;
 use Infira\omg\helper\Utils;
-use Infira\omg\Config;
 use Infira\omg\templates\Class__Construct;
 
 /**
@@ -59,11 +58,15 @@ class Response extends Generator
 			if ($header instanceof Reference and Omg::isComponentHeader($header->getReference())) {
 				$header = $header->resolve();
 			}
-			$setHeader = $this->tpl->createMethod(Utils::methodName(str_replace('-', '_', 'set-' . $name . 'Header')), $header->description);
+			$setHeader = $this->tpl->createMethod(Utils::methodName(str_replace('-', '_', 'setHeader-' . $name)), $header->description);
 			$setHeader->addTypeParameter('value', $header->schema->type);
 			$setHeader->addBodyLine('$this->setHeader(\'' . $name . '\',$value)');
 			$setHeader->addBodyLine('return $this');
 			$setHeader->setReturnType('self');
+			if ($header->schema->default) {
+				$this->tpl->constructor->addBodyLine(sprintf('$this->setHeader(\'%s\',%s)', $name, $header->schema->default));
+			}
+			
 		}
 	}
 	
@@ -76,7 +79,7 @@ class Response extends Generator
 			
 		}
 		else {
-			$generator              = $this->getGenerator($content, Omg::getComponentResponseContentNsPart(), Omg::getComponentResponseContentNsPart());
+			$generator = $this->getGenerator($content, Omg::getComponentResponseContentNsPart(), Omg::getComponentResponseContentNsPart());
 			$generator->make();
 			$this->contentClass = $generator->getFullClassPath();
 		}
@@ -88,12 +91,13 @@ class Response extends Generator
 		$contentClass = $this->contentClass;
 		$this->tpl->import($contentClass, 'Content');
 		$set = $this->tpl->createMethod('setContent');
-		$set->addParameter('content')->setType($contentClass);
-		$set->addBodyLine('parent::doSetContent($content)');
+		$this->tpl->importLib('Storage');
+		$set->addClassParameter('content', 'Content');
+		$set->addBodyLine('$this->content = $this->getModel(Content::class, $content)');
 		
 		$get = $this->tpl->createMethod('getContent');
-		$get->setReturnType('?' . $contentClass);
-		$get->addBodyLine('return $this->doGetContent()');
+		$get->setReturnType("?" . $contentClass);
+		$get->addBodyLine('return $this->content');
 	}
 	
 	public function getContentClass(): string

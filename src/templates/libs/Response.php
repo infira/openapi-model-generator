@@ -5,7 +5,6 @@ namespace Infira\omg\templates\libs;
 
 use Nette\PhpGenerator\ClassType;
 use Infira\omg\Config;
-use Infira\omg\Omg;
 use Infira\omg\templates\Class__Construct;
 
 class Response extends Class__Construct
@@ -27,6 +26,7 @@ class Response extends Class__Construct
 		$this->createHeaders();
 		$this->createSetHeader();
 		$this->createContentMethods();
+		$this->createGetModel();
 		$this->createStatus();
 		$this->createContentType();
 	}
@@ -60,16 +60,29 @@ class Response extends Class__Construct
 	private function createContentMethods()
 	{
 		$this->importLib('Storage');
-		$this->addPropertyType('content', "?" . Omg::getLibPath('Storage'))->setPrivate(true)->setValue(null);
+		$this->addPropertyType('content', 'mixed')->setProtected(true)->setValue(null);
 		
-		$set = $this->createMethod('doSetContent');
-		$set->setProtected(true);
-		$set->addParameter('content')->setType(Omg::getLibPath('Storage'));
-		//$set->addParamComment('content', 'Storage');
-		$set->addBodyLine('$this->content = $content');
+		$set = $this->createMethod('setContent');
+		$set->setAbstract(true);
 		
-		$get = $this->createMethod('doGetContent')->setReturnType('?' . Omg::getLibPath('Storage'));
-		$get->addBodyLine('return $this->content');
+		$get = $this->createMethod('getContent');
+		$get->setAbstract(true);
+	}
+	
+	private function createGetModel()
+	{
+		$method = $this->createMethod('getModel');
+		$method->setProtected(true);
+		$method->addParameter('class')->setType('string');
+		$method->addClassParameter('fill');
+		$method->addBody('if (is_callable($fill)) {
+	return $fill(new $class());
+}
+elseif (is_object($fill) AND $fill instanceof $class) {
+	return $fill;
+}
+
+return new $class($fill);');
 	}
 	
 	private function createStatus()

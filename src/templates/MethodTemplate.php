@@ -94,22 +94,31 @@ class MethodTemplate extends Magics
 		return $param;
 	}
 	
-	public function addClassParameter(string $paramName, string $classType = null): Parameter
+	public function addClassParameter(string $paramName, string $commentType = null): Parameter
 	{
-		$types[] = 'array';
-		$types[] = '\stdClass';
-		$types[] = 'callable';
-		$types[] = 'string';
-		$param   = $this->method->addParameter($paramName, Utils::literal('Storage::NOT_SET'));
+		$types = $this->makeClassTypes(null);
+		$param = $this->method->addParameter($paramName, Utils::literal('Storage::NOT_SET'));
 		if (Config::$phpVersion > 7.3) {
 			$param->setType('mixed');
 		}
-		if ($classType) {
-			$types[] = $classType;
+		if ($commentType) {
+			$types[] = $commentType;
 		}
 		$this->addComment('@param %s $%s', join('|', $types), $paramName);
 		
 		return $param;
+	}
+	
+	private function makeClassTypes(string $class = null): array
+	{
+		$types   = Utils::makePhpTypes($class ?: '\\fantom', false, true);
+		$types[] = 'string';
+		
+		if (($key = array_search('\\fantom', $types)) !== false) {
+			unset($types[$key]);
+		}
+		
+		return $types;
 	}
 	
 	private function doAddBodyLine($line, string $type)

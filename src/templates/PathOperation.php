@@ -38,7 +38,7 @@ class PathOperation extends Class__Construct
 		
 		$createPathResponse = $this->createMethod($createPathResponseMethodName, $comment);
 		$httpCodeParam      = $httpCode == 'default' ? '$httpCode' : $httpCode;
-		$createPathResponse->addBodyLine(sprintf('return $this->createPathResponse(%s,%s::class,$this->%s($fill));', $httpCodeParam, $responseAlias, $getModelMethodName));
+		$createPathResponse->addBodyLine(sprintf('return $this->createPathResponse(%s,%s::class, %s::class, $fill);', $httpCodeParam, $responseAlias, $modelAlias));
 		if ($httpCode == 'default') {
 			$createPathResponse->addTypeParameter('httpCode', 'int');
 		}

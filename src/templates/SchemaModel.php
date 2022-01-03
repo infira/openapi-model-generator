@@ -74,6 +74,7 @@ class SchemaModel extends Class__Construct
 				$propertyConf['def'] = null;
 			}
 		}
+		$propertyConf['frm'] = $property->format ?? $unKnown;
 		
 		if (isset($property->maximum)) {
 			$propertyConf['max'] = $property->maximum;
