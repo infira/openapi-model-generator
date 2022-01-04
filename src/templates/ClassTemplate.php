@@ -142,11 +142,18 @@ class ClassTemplate extends Magics
 		return $prop;
 	}
 	
-	public function addDocPropertyComment(string $name, string $docType, ?string $description)
+	public function addDocPropertyComment(string $name, string $docType, ?string $description = null)
 	{
 		$docType     = join('|', Utils::makePhpTypes($docType, true));
 		$description = $description ?? '';
 		$this->addComment('@property %s $%s %s', $docType, $name, $description);
+	}
+	
+	public function addDocMethodComment(string $name, string $params, string $returnType, ?string $description = null)
+	{
+		$returnType  = join('|', Utils::makePhpTypes($returnType, true));
+		$description = $description ?? '';
+		$this->addComment('@method %s %s(%s) %s', $returnType, $name, $params, $description);
 	}
 	
 	public function beforeFinalize() {}

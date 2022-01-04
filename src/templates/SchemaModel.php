@@ -21,6 +21,7 @@ class SchemaModel extends Class__Construct
 		
 		if ($finalType and Utils::isClassLike($finalType)) {
 			$this->import($finalType);
+			$this->addDocMethodComment('createItemDataModel', 'string $key = null, $filler = Storage::NOT_SET', Utils::extractName($finalType));
 		}
 		$method->addTypeParameter('item', $finalType);
 		$method->setReturnType('self', 'self');
