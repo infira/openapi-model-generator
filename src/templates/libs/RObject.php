@@ -32,7 +32,7 @@ abstract class RObject extends Storage
 		return array_keys($this->properties);
 	}
 	
-	protected function propertyExists(string $key): bool
+	public function propertyExists(string $key): bool
 	{
 		return isset($this->properties[$key]);
 	}
