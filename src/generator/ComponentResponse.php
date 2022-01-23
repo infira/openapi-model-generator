@@ -18,7 +18,7 @@ class ComponentResponse extends \Infira\omg\generator\Response
 	
 	public function __construct(string $name, Response $response)
 	{
-		parent::__construct("/components/responses/$name", "/components/responses/$name");
+		parent::__construct("/components/responses/$name" . "Response", "#/components/responses/$name");
 		$this->response = $response;
 		$this->name     = $name;
 		$this->beforeMake($response);

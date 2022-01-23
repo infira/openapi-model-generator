@@ -53,6 +53,19 @@ abstract class Generator
 	
 	public function __construct(string $namespace, string $schemaLocation, string $tplClass)
 	{
+		if ($schemaLocation[0] != '#' and $schemaLocation != 'register') {
+			Omg::error('Schema location must start with #', ['$schemaLocation' => $schemaLocation]);
+		}
+		if (preg_match('/\#\/components\/schemas\/\w+$/m', $schemaLocation)) {
+			$namespace .= 'Schema';
+		}
+		if (preg_match('/\#\/components\/response\/\w+$/m', $schemaLocation)) {
+			$namespace .= 'Response';
+		}
+		
+		if (preg_match('/\#\/components\/requestBodies\/\w+$/m', $schemaLocation)) {
+			$namespace .= 'RequestBody';
+		}
 		$this->ns = Utils::ns($namespace);
 		$this->ns->set($namespace);
 		$this->schemaLocation = new Ns('#', '/');

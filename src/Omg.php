@@ -127,6 +127,21 @@ class Omg
 		return (self::isComponentResponse($ref) or self::isComponentSchema($ref) or self::isComponentRequestBody($ref));
 	}
 	
+	public static function getReferenceClassnameSuffix(string $ref): string
+	{
+		if (self::isComponentResponse($ref)) {
+			return 'Response';
+		}
+		elseif (self::isComponentSchema($ref)) {
+			return 'Schema';
+		}
+		elseif (self::isComponentRequestBody($ref)) {
+			return 'RequestBody';
+		}
+		
+		return '';
+	}
+	
 	public static function getReferenceClassPath(string $ref): string
 	{
 		if (self::isComponentResponse($ref)) {
@@ -142,7 +157,7 @@ class Omg
 			self::error('unknown reference');
 		}
 		
-		return '\\' . Utils::ns()->get('/components', $type, ucfirst(Utils::extractName($ref)));
+		return '\\' . Utils::ns()->get('/components', $type, ucfirst(Utils::extractName($ref) . self::getReferenceClassnameSuffix($ref)));
 	}
 	
 	public static function notImplementedYet()

@@ -145,7 +145,7 @@ class OmgCommand extends \Infira\console\Command
 	private function makeComponentRequestBodies(array $requests)
 	{
 		foreach ($requests as $name => $request) {
-			$componentResponseGenerator = Omg::getGenerator($request->content[Omg::getContentType($request)]->schema, "/components/requestBodies/$name", "/components/requestBodies/$name");
+			$componentResponseGenerator = Omg::getGenerator($request->content[Omg::getContentType($request)]->schema, "/components/requestBodies/$name", "#/components/requestBodies/$name");
 			$componentResponseGenerator->make();
 		}
 		

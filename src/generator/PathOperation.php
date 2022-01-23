@@ -38,7 +38,7 @@ class PathOperation extends Generator
 		foreach ($templateParts as $part) {
 			$ns = array_merge($ns, $this->parseTemplatePart($part));
 		}
-		parent::__construct(Utils::ns(...$ns)->get(), "/$path/$method", \Infira\omg\templates\PathOperation::class);
+		parent::__construct(Utils::ns(...$ns)->get(), "#/paths$path/$method", \Infira\omg\templates\PathOperation::class);
 		//debug([$this->path => [Config::$pathNamespaceTemplate, $this->getFullClassPath()]]);
 		//debug('----------------------------------- THE END ----------------------------------------------------------------');
 		
@@ -48,6 +48,7 @@ class PathOperation extends Generator
 		$this->tpl->addConstructorLine('parent::__construct(\'%s\', %s, %s);', $method, $aPath, $aOperationID);
 		
 		$this->tpl->addComment('Operation path %s %s', strtoupper($method), $path);
+		$this->tpl->addComment('Operation ID %s ', $this->operation->operationId);
 		$this->tpl->import(Omg::getOperationPath(), 'Operation');
 		$this->tpl->setExtends(Omg::getOperationPath());
 		if ($traits = Config::getOperationTraits()) {
@@ -298,15 +299,15 @@ class PathOperation extends Generator
 			$content     = $resource->content[$contentType]->schema;
 			if ($content instanceof Reference) {
 				$modelClass = Omg::getReferenceClassPath($content->getReference());
-				$this->tpl->registerHttpResponse($httpCode, $parentResponseClass, $modelClass, $contentType);
+				$this->tpl->registerHttpResponse($httpCode, $parentResponseClass, $modelClass);
 			}
 			else {
-				$this->tpl->registerHttpResponse($httpCode, $parentResponseClass, Utils::ns($parentResponseClass)->getFullClassPath(Omg::getComponentResponseContentNsPart()), $contentType);
+				$this->tpl->registerHttpResponse($httpCode, $parentResponseClass, Utils::ns($parentResponseClass)->getFullClassPath(Omg::getComponentResponseContentNsPart()));
 			}
 		}
 		elseif ($resource instanceof Response and !$parentResponseClass) {
 			$response = $this->makeResponse($httpCode, $resource);
-			$this->tpl->registerHttpResponse($httpCode, $response->getFullClassPath(), $response->getContentClass(), $contentType);
+			$this->tpl->registerHttpResponse($httpCode, $response->getFullClassPath(), $response->getContentClass());
 		}
 		else {
 			Omg::notImplementedYet();

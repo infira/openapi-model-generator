@@ -16,7 +16,7 @@ class Ns
 	
 	public function __construct(string $rootPath = null, string $seperator = '\\')
 	{
-		$this->rootPath  = $rootPath;
+		$this->rootPath  = str_replace('\\', '/', $rootPath);
 		$this->seperator = $seperator;
 	}
 	
@@ -25,7 +25,11 @@ class Ns
 		if (!$parts) {
 			$parts = [''];
 		}
-		array_walk($parts, function (&$p) { $p = str_replace('../', '[_CD_]', $p); });
+		array_walk($parts, function (&$p)
+		{
+			$p = str_replace('\\', '/', $p);
+			$p = str_replace('../', '[_CD_]', $p);
+		});
 		$parts[0]  = trim($parts[0]);
 		$firstPart = strlen($parts[0]) > 0 ? $parts[0] : '';
 		$className = $this->getClassName();
@@ -67,15 +71,13 @@ class Ns
 				unset($fullParts[$key]);
 				continue;
 			}
-			$item            = str_replace('/', $this->seperator, $item);
-			$item            = str_replace('\\', $this->seperator, $item);
-			$item            = str_replace('\\\\\\', $this->seperator, $item);
-			$item            = str_replace('\\\\', $this->seperator, $item);
 			$fullParts[$key] = $item;
 		}
-		$final = join($this->seperator, $fullParts);
-		$final = str_replace($rootPath . $this->seperator . $rootPath, $rootPath, $final);
+		$final = join('/', $fullParts);
+		$final = str_replace("$rootPath/$rootPath", $rootPath, $final);
 		$final = $this->cdNs($final);
+		$final = str_replace('/', $this->seperator, $final);
+		$final = str_replace('\\', $this->seperator, $final);
 		
 		if (strpos($final, '.') !== false) {
 			Omg::error('not allowed character in namespace:' . $final);
@@ -90,19 +92,19 @@ class Ns
 		$afterCd = substr($ns, $cdPos + 6);
 		if ($cdPos !== false) {
 			if ($afterCd) {
-				if ($afterCd[0] != '\\') {
-					$afterCd = '\\' . $afterCd;
+				if ($afterCd[0] != '/') {
+					$afterCd = '/' . $afterCd;
 				}
 			}
 			
 			$firstCdPos = $cdPos;
 			$prevPos    = $cdPos - 1;
-			if ($ns[$prevPos] == '\\') {
+			if ($ns[$prevPos] == '/') {
 				$firstCdPos--;
 			}
 			$tmpNs = substr($ns, 0, $firstCdPos);
 			
-			return $this->cdNs(substr($ns, 0, strrpos($tmpNs, '\\')) . $afterCd);
+			return $this->cdNs(substr($ns, 0, strrpos($tmpNs, '/')) . $afterCd);
 		}
 		
 		return $ns;
