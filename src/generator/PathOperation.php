@@ -49,8 +49,12 @@ class PathOperation extends Generator
 		
 		$this->tpl->addComment('Operation path %s %s', strtoupper($method), $path);
 		$this->tpl->addComment('Operation ID %s ', $this->operation->operationId);
-		$this->tpl->import(Omg::getOperationPath(), 'Operation');
-		$this->tpl->setExtends(Omg::getOperationPath());
+		
+		$operationClass = Config::getOperationClass() ?: Omg::getOperationPath();
+		if ($operationClass === null) {
+			$this->tpl->import(Omg::getOperationPath(), 'Operation');
+		}
+		$this->tpl->setExtends($operationClass);
 		if ($traits = Config::getOperationTraits()) {
 			foreach ($traits as $trait) {
 				$this->tpl->addTrait($trait);

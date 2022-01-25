@@ -50,6 +50,11 @@ class Config
 		return self::$httpStatusNameMap[$statusCode] ?? $statusCode;
 	}
 	
+	public static function getOperationClass(): ?string
+	{
+		return self::$operationClass;
+	}
+	
 	public static function getOperationTraits(): array
 	{
 		if (!is_array(self::$operationTraits)) {
