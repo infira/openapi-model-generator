@@ -9,7 +9,7 @@ abstract class Storage
 	protected $propertiesAreMandatory           = false;
 	protected $fillNonExistingWithDefaultValues = false;
 	protected $filledValue                      = self::NOT_SET;
-	private   $itemValueParser                       = [];
+	private   $itemValueParser                  = [];
 	
 	/**
 	 * @var \ArrayObject
@@ -146,7 +146,7 @@ abstract class Storage
 		return $this;
 	}
 	
-	public function get(string $key)
+	public function get(string $key, $default = self::NOT_SET)
 	{
 		$this->validateKey($key);
 		$itemValueType = $this->getItemValueType($this->amiArray() ? self::NOT_SET : $key);
@@ -165,8 +165,11 @@ abstract class Storage
 		elseif ($this->getItemDefaultValue($key) !== self::NOT_SET) {
 			$rv = $this->getItemDefaultValue($key);
 		}
-		else {
+		elseif ($default === self::NOT_SET) {
 			$this->error('trying to retrieve value which does not exists', $key);
+		}
+		else {
+			return $default;
 		}
 		
 		if ($this->isDataObject($itemValueType)) {
