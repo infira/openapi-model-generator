@@ -86,7 +86,9 @@ class MethodTemplate extends Magics
 			return $this->addClassParameter($paramName, Utils::extractName($paramType));
 		}
 		$param = $this->method->addParameter($paramName);
-		$param->setType(Utils::toPhpType($paramType));
+		if ($paramType != 'mixed') {
+			$param->setType(Utils::toPhpType($paramType));
+		}
 		if ($addComment) {
 			$this->addParamComment($paramName, $paramType);
 		}

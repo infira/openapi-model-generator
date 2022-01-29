@@ -37,10 +37,14 @@ class SchemaArrayGenerator extends ObjectGenerator
 				$this->tpl->setArrayItemType('object', $generator->getFullClassPath(), $schema->items);
 			}
 			else {
-				if (!$schema->items->type) {
-					Omg::error('type not defined');
+				if (is_array($schema->items->type))
+				{
+					$this->tpl->setArrayItemType('mixed', null, $schema->items);
 				}
-				if (Omg::isMakeable($schema->items->type)) {
+				elseif (!$schema->items->type) {
+					Omg::error('type not defined',['type'=>$schema->items->type]);
+				}
+				elseif (Omg::isMakeable($schema->items->type)) {
 					$generator = $this->getGenerator($schema->items, '../arrayItem/%className%', 'items', $schema->items->type);
 					$generator->make();
 					$this->tpl->setArrayItemType($schema->items->type, $generator->getFullClassPath(), $schema->items);

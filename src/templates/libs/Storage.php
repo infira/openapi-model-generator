@@ -257,7 +257,7 @@ abstract class Storage
 				$this->error("can take only sequential array", $key);
 			}
 		}
-		elseif ($itemValueType != $realType) {
+		elseif ($itemValueType != $realType AND $itemValueType != 'mixed') {
 			$this->error("value must be type('$itemValueType') type('$realType') was given", $key);
 		}
 		//endregion
