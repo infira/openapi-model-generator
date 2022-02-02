@@ -4,12 +4,12 @@
 abstract class Storage
 {
 	const NOT_SET = '--NOT_SET--';
-	protected $parentKey                        = null;
-	protected $nullable                         = false;
-	protected $propertiesAreMandatory           = false;
-	protected $fillNonExistingWithDefaultValues = false;
-	protected $filledValue                      = self::NOT_SET;
-	private   $itemValueParser                  = [];
+	protected      $parentKey                        = null;
+	protected      $nullable                         = false;
+	protected      $propertiesAreMandatory           = false;
+	protected      $fillNonExistingWithDefaultValues = false;
+	protected      $filledValue                      = self::NOT_SET;
+	private static $formatters                       = [];
 	
 	/**
 	 * @var \ArrayObject
@@ -182,14 +182,26 @@ abstract class Storage
 		return $this->storage[$key]['rv'];
 	}
 	
-	public function addItemValueParser(callable $parser, string $key = null)
+	/**
+	 * @param string   $format
+	 * @param callable $parser
+	 * @see https://swagger.io/specification/#format
+	 * @return void
+	 */
+	public static function addFormatter(string $format, callable $parser)
 	{
-		if ($key === null) {
-			$this->itemValueParser['general'][] = $parser;
+		self::$formatters[$format][] = $parser;
+	}
+	
+	private function formatValue(string $format, $value)
+	{
+		if (isset(self::$formatters[$format])) {
+			foreach (self::$formatters[$format] as $parser) {
+				$value = $parser($value);
+			}
 		}
-		else {
-			$this->itemValueParser['byKeys'][$key] = $parser;
-		}
+		
+		return $value;
 	}
 	
 	public function set(string $key, $value)
@@ -200,16 +212,10 @@ abstract class Storage
 		$itemConfig     = $this->getItemConfig($key);
 		$itemIsNullable = $this->getItemIsNullable($key);
 		
-		if (isset($this->itemValueParser[$key])) {
-			$c     = $this->itemValueParser[$key];
-			$value = $c($value, $itemConfig);
+		$format = $itemConfig['frm'] ?? self::NOT_SET;
+		if ($format !== self::NOT_SET) {
+			$value = $this->formatValue($format, $value);
 		}
-		if (isset($this->itemValueParser['general'])) {
-			foreach ($this->itemValueParser['general'] as $parser) {
-				$value = $parser($value, $itemConfig);
-			}
-		}
-		
 		
 		//region item value validation
 		if ($value === null) {
@@ -257,7 +263,7 @@ abstract class Storage
 				$this->error("can take only sequential array", $key);
 			}
 		}
-		elseif ($itemValueType != $realType AND $itemValueType != 'mixed') {
+		elseif ($itemValueType != $realType and $itemValueType != 'mixed') {
 			$this->error("value must be type('$itemValueType') type('$realType') was given", $key);
 		}
 		//endregion
