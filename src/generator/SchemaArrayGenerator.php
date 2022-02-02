@@ -17,8 +17,9 @@ class SchemaArrayGenerator extends ObjectGenerator
 		$schema = $this->schema;
 		if ($schema) {
 			if ($schema->items instanceof Reference) {
-				$resolved = $schema->items->resolve();
 				$ref      = $schema->items->getReference();
+				addExtraErrorInfo('$ref',Omg::getReferenceClassPath($ref));
+				$resolved = $schema->items->resolve();
 				if (Omg::isComponentRef($ref) and Omg::isMakeable($resolved->type)) {
 					$this->tpl->setArrayItemType($resolved->type, Omg::getReferenceClassPath($ref), $resolved);
 				}
