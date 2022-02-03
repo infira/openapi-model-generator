@@ -55,7 +55,7 @@ class Response extends Generator
 	private function addHeaderMethods(array $headers)
 	{
 		foreach ($headers as $name => $header) {
-			if ($header instanceof Reference and Omg::isComponentHeader($header->getReference())) {
+			if ($header instanceof Reference and Omg::isComponentHeader($header)) {
 				$header = $header->resolve();
 			}
 			$setHeader = $this->tpl->createMethod(Utils::methodName(str_replace('-', '_', 'setHeader-' . $name)), $header->description);
@@ -75,8 +75,7 @@ class Response extends Generator
 		$contentType = Omg::getContentType($response);
 		$content     = $response->content[$contentType]->schema;
 		if ($content instanceof Reference) {
-			$this->contentClass = Omg::getReferenceClassPath($content->getReference());
-			
+			$this->contentClass = Omg::getReferenceClassPath($content);
 		}
 		else {
 			$generator = $this->getGenerator($content, Omg::getComponentResponseContentNsPart(), Omg::getComponentResponseContentNsPart());

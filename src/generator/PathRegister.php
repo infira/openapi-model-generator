@@ -21,7 +21,11 @@ class PathRegister extends \Infira\omg\Generator
 		$this->paths = $paths;
 	}
 	
-	public function make(): string
+	/**
+	 * @throws \Exception
+	 * @return PathRegister
+	 */
+	public function make()
 	{
 		/** @var \cebe\openapi\spec\PathItem $def */
 		foreach ($this->paths as $path => $def) {

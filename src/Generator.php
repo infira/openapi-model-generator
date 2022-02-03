@@ -12,6 +12,7 @@ use Infira\omg\helper\Ns;
 
 abstract class Generator
 {
+	private $makeFile;
 	/**
 	 * @var \Nette\PhpGenerator\PhpFile
 	 */
@@ -93,7 +94,11 @@ abstract class Generator
 		return $file;
 	}
 	
-	public function make(): string
+	/**
+	 * @throws \Exception
+	 * @return Generator
+	 */
+	public function make()
 	{
 		$cid = $this->ns->get();
 		if (!$cid) {
@@ -109,7 +114,9 @@ abstract class Generator
 		$file = str_replace('\\', DIRECTORY_SEPARATOR, str_replace(Config::getRootNamespace() . '\\', '', $this->ns->get("../") . "\\$className.php"));
 		$this->tpl->finalize();
 		
-		return self::makeFile($file, Utils::printNette($this->phpf));
+		$this->makeFile = self::makeFile($file, Utils::printNette($this->phpf));
+		
+		return $this;
 	}
 	
 	//region namespace helpers
@@ -134,6 +141,37 @@ abstract class Generator
 	protected final function getGenerator($bodySchema, string $namespace, string $schemaLocation, string $type = null)
 	{
 		return Omg::getGenerator($bodySchema, $this->ns->get($namespace), $this->schemaLocation->get($schemaLocation), $type);
+	}
+	
+	protected final function makeIfNeeded($from, string $namespace, string $schemaLocation, string $overRideType = null): \stdClass
+	{
+		$res            = new \stdClass();
+		$res->dataClass = null;
+		$res->type      = null;
+		
+		if ($from instanceof Reference) {
+			if (Omg::isComponent($from) and Omg::isMakeableReference($from)) {
+				$res->dataClass = Omg::getReferenceClassPath($from);
+			}
+			$res->type = $overRideType ?: Omg::getType($from);
+		}
+		elseif ($from instanceof Schema and $from->type == 'array' && $from->items instanceof Reference and Omg::isComponent($from->items) and !Omg::isMakeableReference($from->items)) {
+			$ref            = $from->items->getReference();
+			$res->dataClass = $this->getGenerator($from, $namespace, $schemaLocation . '/$ref:' . $ref, 'array')->make()->getFullClassPath();
+			$res->type      = 'array';
+		}
+		elseif ($from instanceof Schema and $from->type == 'array' && $from->items instanceof Reference) {
+			return $this->makeIfNeeded($from->items, $namespace, $schemaLocation, 'array');
+		}
+		elseif ($from instanceof Schema and Omg::isMakeable($from->type)) {
+			$res->dataClass = $this->getGenerator($from, $namespace, $schemaLocation, $from->type)->make()->getFullClassPath();
+			$res->type      = $from->type;
+		}
+		elseif ($from instanceof Schema and $from->type == 'array' && $from->items instanceof Reference && !Omg::isComponent($from->items)) {
+			Omg::error('not implemented');
+		}
+		
+		return $res;
 	}
 	
 	//endregion

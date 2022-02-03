@@ -28,7 +28,10 @@ abstract class ObjectGenerator extends Generator
 		$this->schema = $schema;
 	}
 	
-	public function make(): string
+	/**
+	 * @return \Infira\omg\generator\ObjectGenerator
+	 */
+	public function make()
 	{
 		if (!$this->tpl->getExtends() and $this->extendableLib) {
 			$this->tpl->extendLib($this->extendableLib);

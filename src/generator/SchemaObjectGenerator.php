@@ -4,7 +4,6 @@ namespace Infira\omg\generator;
 
 use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Reference;
-use Infira\omg\Omg;
 use Infira\console\helper\Utils;
 
 class SchemaObjectGenerator extends ObjectGenerator
@@ -14,71 +13,37 @@ class SchemaObjectGenerator extends ObjectGenerator
 		parent::__construct($namespace, $schemaLocation, 'RObject');
 	}
 	
-	public function make(): string
+	/**
+	 * @return SchemaObjectGenerator
+	 */
+	public function make()
 	{
 		$schema = $this->schema;
 		if ($schema) {
 			foreach ($schema->properties as $propertyName => $property) {
 				$dataClass = null;
 				
-				if ($property instanceof Reference) {
-					$ref = $property->getReference();
-					/**
-					 * @var Schema $resolved
-					 */
-					$resolved = $property->resolve();
-					if (Omg::isMakeable($resolved->type) and Omg::isComponentRef($ref)) {
-						$dataClass = Omg::getReferenceClassPath($ref);
-					}
-					$propertyPhpType = $resolved->type;
-					$property        = $resolved;
-				}
-				elseif ($property->type == 'array' && $property->items instanceof Reference and Omg::isComponentRef($property->items->getReference()) and Omg::isReferenceMakeable($property->items)) {
-					$dataClass       = Omg::getReferenceClassPath($property->items->getReference());
-					$propertyPhpType = 'array';
-				}
-				elseif ($property->type == 'array' && $property->items instanceof Reference and Omg::isComponentRef($property->items->getReference()) and !Omg::isReferenceMakeable($property->items)) {
-					$ref       = $property->items->getReference();
-					$generator = $this->getPropertyModelGenerator('array', $property, $propertyName, "properties/$propertyName" . '/$ref:' . $ref);
-					$dataClass = $generator->getFullClassPath();
-					if (!Omg::isGenerated($generator->ns->get())) {
-						$generator->make();
-					}
-					$propertyPhpType = 'array';
-					
-				}
-				elseif ($property->type == 'array' && $property->items instanceof Reference && !Omg::isComponentRef($property->items->getReference())) {
-					Omg::error('not implemented');
-				}
-				elseif ($property->type == 'array') {
-					$sloc      = "properties/$propertyName";
-					$generator = $this->getPropertyModelGenerator('array', $property, $propertyName, $sloc);
-					$dataClass = $generator->getFullClassPath();
-					if (!Omg::isGenerated($generator->ns->get())) {
-						$generator->make();
-					}
-					$propertyPhpType = 'array';
-				}
-				elseif ($property->type == 'object') {
-					//debug([$propertyName => $property]);
-					$generator = $this->getPropertyModelGenerator('object', $property, $propertyName, "properties/$propertyName");
-					$generator->make();
-					$dataClass       = $generator->getFullClassPath();
-					$propertyPhpType = 'object';
+				$ucPropertyName = ucfirst($propertyName);
+				if (strpos($this->ns->get("./../property/%className%$ucPropertyName"), 'property\property') !== false) {
+					$namespace = "../../property/%className%$ucPropertyName";
 				}
 				else {
-					$propertyPhpType = $property->type;
+					$namespace = "../property/%className%$ucPropertyName";
 				}
+				$schemaLocation  = "properties/$propertyName";
+				$make            = $this->makeIfNeeded($property, $namespace, $schemaLocation);
+				$dataClass       = $make->dataClass;
+				$propertyPhpType = $make->type ?: $property->type;
+				$finalType       = $propertyPhpType;
 				
-				$finalType = $propertyPhpType;
 				if ($dataClass) {
 					$finalType = $dataClass;
 				}
 				if ($finalType and Utils::isClassLike($finalType)) {
 					$this->tpl->import($finalType);
 				}
-				
-				$method = $this->tpl->createMethod('set' . ucfirst($propertyName), $property->description);
+				$property = ($property instanceof Reference) ? $property->resolve() : $property;
+				$method   = $this->tpl->createMethod('set' . ucfirst($propertyName), $property->description);
 				$method->addTypeParameter('value', $finalType);
 				$method->addBodyLine(sprintf('$this->set(\'%s\', $value)', $propertyName), 'return $this');
 				$method->setReturnType('self', 'self');
@@ -87,8 +52,6 @@ class SchemaObjectGenerator extends ObjectGenerator
 				
 				$finalType = $property->nullable === true ? "?$finalType" : $finalType;
 				$this->tpl->addDocPropertyComment($propertyName, $finalType, $property->description);
-				
-				unset($propertyPhpType);
 			}
 		}
 		

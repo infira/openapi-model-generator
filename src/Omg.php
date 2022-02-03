@@ -14,6 +14,11 @@ class Omg
 {
 	private static $generatedItems = [];
 	
+	/**
+	 * @var \Infira\console\ConsoleOutput $console
+	 */
+	public static $console;
+	
 	public static function isGenerated(string $cid): bool
 	{
 		return isset(self::$generatedItems[$cid]);
@@ -55,7 +60,7 @@ class Omg
 		}
 		
 		if ($bodySchema and $bodySchema instanceof Reference) {
-			if (!self::isComponentRef($bodySchema->getReference())) {
+			if (!self::isComponent($bodySchema)) {
 				self::notImplementedYet();
 			}
 			/*
@@ -63,7 +68,7 @@ class Omg
 				$generator->setSchema($bodySchema->resolve());
 			}
 			*/
-			$generator->tpl->setExtends(self::getReferenceClassPath($bodySchema->getReference()));
+			$generator->tpl->setExtends(self::getReferenceClassPath($bodySchema));
 		}
 		elseif ($bodySchema !== null) {
 			self::validateSchema($bodySchema);
@@ -99,35 +104,44 @@ class Omg
 	//TODO miks seda vaja on?
 	public static function isMakeable(string $type): bool
 	{
+		if (!$type)
+		{
+			return false;
+		}
 		return in_array($type, ['array', 'object']);
 	}
 	
-	public static function isComponentHeader(string $ref): bool
+	public static function isComponentHeader(Reference $ref): bool
 	{
-		return strpos($ref, '#/components/headers/') !== false;
+		return strpos($ref->getReference(), '#/components/headers/') !== false;
 	}
 	
-	public static function isComponentSchema(string $ref): bool
+	public static function isComponentSchema(Reference $ref): bool
 	{
-		return strpos($ref, '#/components/schemas/') !== false;
+		return strpos($ref->getReference(), '#/components/schemas/') !== false;
 	}
 	
-	public static function isComponentResponse(string $ref): bool
+	public static function isComponentResponse(Reference $ref): bool
 	{
-		return strpos($ref, '#/components/responses/') !== false;
+		return strpos($ref->getReference(), '#/components/responses/') !== false;
 	}
 	
-	public static function isComponentRequestBody(string $ref): bool
+	public static function isComponentRequestBody(Reference $ref): bool
 	{
-		return strpos($ref, '#/components/requestBodies/') !== false;
+		return strpos($ref->getReference(), '#/components/requestBodies/') !== false;
 	}
 	
-	public static function isComponentRef(string $ref): bool
+	public static function isMakeableReference(Reference $ref): bool
+	{
+		return self::isMakeable(self::getType($ref));
+	}
+	
+	public static function isComponent(Reference $ref): bool
 	{
 		return (self::isComponentResponse($ref) or self::isComponentSchema($ref) or self::isComponentRequestBody($ref));
 	}
 	
-	public static function getReferenceClassnameSuffix(string $ref): string
+	public static function getReferenceClassnameSuffix(Reference $ref): string
 	{
 		if (self::isComponentResponse($ref)) {
 			return 'Response';
@@ -142,7 +156,7 @@ class Omg
 		return '';
 	}
 	
-	public static function getReferenceClassPath(string $ref): string
+	public static function getReferenceClassPath(Reference $ref): string
 	{
 		if (self::isComponentResponse($ref)) {
 			$type = 'responses';
@@ -157,7 +171,7 @@ class Omg
 			self::error('unknown reference');
 		}
 		
-		return '\\' . Utils::ns()->get('/components', $type, ucfirst(Utils::extractName($ref) . self::getReferenceClassnameSuffix($ref)));
+		return '\\' . Utils::ns()->get('/components', $type, ucfirst(Utils::extractName($ref->getReference()) . self::getReferenceClassnameSuffix($ref)));
 	}
 	
 	public static function notImplementedYet()
@@ -237,5 +251,15 @@ class Omg
 			addExtraErrorInfo($extraData);
 		}
 		throw new \Exception($msg);
+	}
+	
+	public static function debug(...$data)
+	{
+		self::$console->debug(...$data);
+	}
+	
+	public static function trace(string $regionTitle = 'omg trace')
+	{
+		self::$console->traceRegion($regionTitle, debug_backtrace());
 	}
 }

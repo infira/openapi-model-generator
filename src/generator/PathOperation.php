@@ -216,13 +216,16 @@ class PathOperation extends Generator
 		return $output;
 	}
 	
-	public function make(): string
+	/**
+	 * @return PathOperation
+	 */
+	public function make()
 	{
 		//parse requests
 		if ($this->operation->requestBody) {
 			if ($this->operation->requestBody instanceof Reference) {
 				$description  = $this->operation->requestBody->resolve()->descrtipion ?? '';
-				$requestClass = Omg::getReferenceClassPath($this->operation->requestBody->getReference());
+				$requestClass = Omg::getReferenceClassPath($this->operation->requestBody);
 			}
 			else {
 				$generateFrom = $this->operation->requestBody->content[Omg::getContentType($this->operation->requestBody)]->schema;
@@ -266,7 +269,7 @@ class PathOperation extends Generator
 		if ($resource instanceof Reference) {
 			//debug($resource->getReference());
 			Omg::notImplementedYet();
-			$generator->tpl->setExtends(Omg::getReferenceClassPath($resource->getReference()));
+			$generator->tpl->setExtends(Omg::getReferenceClassPath($resource));
 		}
 		else {
 			//debug(get_class($resource));
@@ -290,8 +293,8 @@ class PathOperation extends Generator
 	public function parseResponse(string $httpCode, $resource, string $parentResponseClass = null)
 	{
 		$contentType = Omg::getContentType($resource);
-		if ($resource instanceof Reference and Omg::isComponentResponse($resource->getReference())) {
-			$responseClass = Omg::getReferenceClassPath($resource->getReference());
+		if ($resource instanceof Reference and Omg::isComponentResponse($resource)) {
+			$responseClass = Omg::getReferenceClassPath($resource);
 			$this->parseResponse($httpCode, $resource->resolve(), $responseClass);
 		}
 		elseif ($resource instanceof Reference) {
@@ -302,7 +305,7 @@ class PathOperation extends Generator
 			$contentType = Omg::getContentType($resource);
 			$content     = $resource->content[$contentType]->schema;
 			if ($content instanceof Reference) {
-				$modelClass = Omg::getReferenceClassPath($content->getReference());
+				$modelClass = Omg::getReferenceClassPath($content);
 				$this->tpl->registerHttpResponse($httpCode, $parentResponseClass, $modelClass);
 			}
 			else {

@@ -3,15 +3,22 @@
 namespace Infira\omg\templates;
 
 
-use cebe\openapi\spec\Schema;
+use cebe\openapi\spec\{Schema, Reference};
 use Infira\omg\Omg;
 use Infira\omg\Config;
 use Infira\omg\helper\Utils;
 
 class SchemaModel extends Class__Construct
 {
-	public function setArrayItemType(string $phpType, ?string $dataClass, Schema $item)
+	/**
+	 * @param string           $phpType
+	 * @param string|null      $dataClass
+	 * @param Schema|Reference $item
+	 * @return void
+	 */
+	public function setArrayItemType(string $phpType, ?string $dataClass, object $item)
 	{
+		$item = ($item instanceof Reference) ? $item->resolve() : $item;
 		$this->addConstructorLine('$this->setItemConfig([%s]);', $this->makePropertyConfig($phpType, $dataClass, false, $item, $this->generator->schemaLocation->get()));
 		
 		$method = $this->createMethod('add', $item->description);
