@@ -33,19 +33,24 @@ class SchemaObjectGenerator extends ObjectGenerator
 					$propertyPhpType = $resolved->type;
 					$property        = $resolved;
 				}
-				elseif ($property->type == 'array') {
-					if ($property->items instanceof Reference) {
-						$ref = $property->items->getReference();
-						if (Omg::isComponentRef($ref)) {
-							$sloc = "properties/$propertyName" . '/$ref:' . $ref;
-						}
-						else {
-							Omg::notImplementedYet();
+				elseif ($property->type == 'array' && $property->items instanceof Reference) {
+					$ref = $property->items->getReference();
+					if (Omg::isComponentRef($ref)) {
+						$sloc      = "properties/$propertyName" . '/$ref:' . $ref;
+						$generator = $this->getPropertyModelGenerator('array', $property, $propertyName, $sloc);
+						$dataClass = $generator->getFullClassPath();
+						if (!Omg::isGenerated($generator->ns->get())) {
+							$generator->make();
 						}
 					}
 					else {
-						$sloc = "properties/$propertyName";
+						Omg::notImplementedYet();
 					}
+					
+					$propertyPhpType = 'array';
+				}
+				elseif ($property->type == 'array') {
+					$sloc      = "properties/$propertyName";
 					$generator = $this->getPropertyModelGenerator('array', $property, $propertyName, $sloc);
 					$dataClass = $generator->getFullClassPath();
 					if (!Omg::isGenerated($generator->ns->get())) {
