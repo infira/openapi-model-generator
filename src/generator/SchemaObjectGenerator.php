@@ -33,21 +33,22 @@ class SchemaObjectGenerator extends ObjectGenerator
 					$propertyPhpType = $resolved->type;
 					$property        = $resolved;
 				}
-				elseif ($property->type == 'array' && $property->items instanceof Reference) {
-					$ref = $property->items->getReference();
-					if (Omg::isComponentRef($ref)) {
-						$sloc      = "properties/$propertyName" . '/$ref:' . $ref;
-						$generator = $this->getPropertyModelGenerator('array', $property, $propertyName, $sloc);
-						$dataClass = $generator->getFullClassPath();
-						if (!Omg::isGenerated($generator->ns->get())) {
-							$generator->make();
-						}
-					}
-					else {
-						Omg::notImplementedYet();
-					}
-					
+				elseif ($property->type == 'array' && $property->items instanceof Reference and Omg::isComponentRef($property->items->getReference()) and Omg::isReferenceMakeable($property->items)) {
+					$dataClass       = Omg::getReferenceClassPath($property->items->getReference());
 					$propertyPhpType = 'array';
+				}
+				elseif ($property->type == 'array' && $property->items instanceof Reference and Omg::isComponentRef($property->items->getReference()) and !Omg::isReferenceMakeable($property->items)) {
+					$ref       = $property->items->getReference();
+					$generator = $this->getPropertyModelGenerator('array', $property, $propertyName, "properties/$propertyName" . '/$ref:' . $ref);
+					$dataClass = $generator->getFullClassPath();
+					if (!Omg::isGenerated($generator->ns->get())) {
+						$generator->make();
+					}
+					$propertyPhpType = 'array';
+					
+				}
+				elseif ($property->type == 'array' && $property->items instanceof Reference && !Omg::isComponentRef($property->items->getReference())) {
+					Omg::error('not implemented');
 				}
 				elseif ($property->type == 'array') {
 					$sloc      = "properties/$propertyName";
