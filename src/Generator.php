@@ -57,25 +57,21 @@ abstract class Generator
 		if ($schemaLocation[0] != '#' and $schemaLocation != 'register') {
 			Omg::error('Schema location must start with #', ['$schemaLocation' => $schemaLocation]);
 		}
-		if (preg_match('/\#\/components\/schemas\/\w+$/m', $schemaLocation)) {
-			$namespace .= 'Schema';
-		}
-		if (preg_match('/\#\/components\/response\/\w+$/m', $schemaLocation)) {
-			$namespace .= 'Response';
-		}
-		
-		if (preg_match('/\#\/components\/requestBodies\/\w+$/m', $schemaLocation)) {
-			$namespace .= 'RequestBody';
-		}
 		$this->ns = Utils::ns($namespace);
 		$this->ns->set($namespace);
+		if ($suffix = Omg::getClassnameSuffix($schemaLocation)) {
+			if ($suffix == 'Response') {
+				//Omg::debug($namespace);
+			}
+			$this->ns->setClassSuffix($suffix);
+		}
 		$this->schemaLocation = new Ns('#', '/');
 		$this->schemaLocation->set($schemaLocation);
 		
 		
 		$this->phpf         = new PhpFile();
 		$this->phpNamespace = $this->phpf->addNamespace($this->ns->get('../'));
-		$this->ct           = $this->phpNamespace->addClass(Utils::className($this->getClassName()));
+		$this->ct           = $this->phpNamespace->addClass(Utils::className($this->ns->getFullClassName()));
 		$this->tpl          = new $tplClass($this->ct, $this->phpNamespace);
 		$this->tpl->setGenerator($this);
 		$this->tpl->addComment('Schema location ' . $this->schemaLocation->get());
@@ -108,7 +104,7 @@ abstract class Generator
 			Omg::error("class $cid is already generated from " . Omg::getGenerated($cid));
 		}
 		Omg::setGenerated($cid, $this->schemaLocation->get());
-		$className = Utils::className($this->getClassName());
+		$className = Utils::className($this->ns->getFullClassName());
 		
 		
 		$file = str_replace('\\', DIRECTORY_SEPARATOR, str_replace(Config::getRootNamespace() . '\\', '', $this->ns->get("../") . "\\$className.php"));
@@ -120,12 +116,12 @@ abstract class Generator
 	}
 	
 	//region namespace helpers
-	protected final function getClassName(): string
+	public final function getClassName(): string
 	{
 		return $this->ns->getClassName();
 	}
 	
-	protected final function getFullClassPath(string ...$parts): string
+	public final function getFullClassPath(string ...$parts): string
 	{
 		return $this->ns->getFullClassPath(...$parts);
 	}
@@ -150,22 +146,30 @@ abstract class Generator
 		$res->type      = null;
 		
 		if ($from instanceof Reference) {
-			if (Omg::isComponent($from) and Omg::isMakeableReference($from)) {
+			if (Omg::isComponent($from) and Omg::isMakeable($from)) {
 				$res->dataClass = Omg::getReferenceClassPath($from);
 			}
 			$res->type = $overRideType ?: Omg::getType($from);
 		}
-		elseif ($from instanceof Schema and $from->type == 'array' && $from->items instanceof Reference and Omg::isComponent($from->items) and !Omg::isMakeableReference($from->items)) {
+		
+		elseif ($from instanceof Schema and $from->type == 'array' && $from->items instanceof Reference and Omg::isComponent($from->items) and !Omg::isMakeable($from->items) and 1 == 2) {
 			$ref            = $from->items->getReference();
 			$res->dataClass = $this->getGenerator($from, $namespace, $schemaLocation . '/$ref:' . $ref, 'array')->make()->getFullClassPath();
 			$res->type      = 'array';
 		}
-		elseif ($from instanceof Schema and $from->type == 'array' && $from->items instanceof Reference) {
-			return $this->makeIfNeeded($from->items, $namespace, $schemaLocation, 'array');
+		elseif ($from instanceof Schema and $from->type == 'array') {
+			if ($from->items instanceof Reference) {
+				$ref            = $from->items->getReference();
+				$schemaLocation .= '/$ref:' . $ref;
+			}
+			$res->dataClass = $this->getGenerator($from, $namespace, $schemaLocation, 'array')->make()->getFullClassPath();
+			$res->type      = 'array';
+			//return $this->makeIfNeeded($from->items, $namespace, $schemaLocation, 'array');
 		}
 		elseif ($from instanceof Schema and Omg::isMakeable($from->type)) {
 			$res->dataClass = $this->getGenerator($from, $namespace, $schemaLocation, $from->type)->make()->getFullClassPath();
 			$res->type      = $from->type;
+			$res->debug     = 1;
 		}
 		elseif ($from instanceof Schema and $from->type == 'array' && $from->items instanceof Reference && !Omg::isComponent($from->items)) {
 			Omg::error('not implemented');

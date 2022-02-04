@@ -5,6 +5,7 @@ namespace Infira\omg\generator;
 use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Reference;
 use Infira\console\helper\Utils;
+use Infira\omg\Omg;
 
 class SchemaObjectGenerator extends ObjectGenerator
 {
@@ -20,18 +21,21 @@ class SchemaObjectGenerator extends ObjectGenerator
 	{
 		$schema = $this->schema;
 		if ($schema) {
+			/**
+			 * @var Schema $property
+			 */
 			foreach ($schema->properties as $propertyName => $property) {
 				$dataClass = null;
 				
 				$ucPropertyName = ucfirst($propertyName);
 				if (strpos($this->ns->get("./../property/%className%$ucPropertyName"), 'property\property') !== false) {
-					$namespace = "../../property/%className%$ucPropertyName";
+					$namespace = "../../property/%className%$ucPropertyName" . "Property";
 				}
 				else {
-					$namespace = "../property/%className%$ucPropertyName";
+					$namespace = "../property/%className%$ucPropertyName" . "Property";
 				}
-				$schemaLocation  = "properties/$propertyName";
-				$make            = $this->makeIfNeeded($property, $namespace, $schemaLocation);
+				$schemaLocation = "properties/$propertyName";
+				$make           = $this->makeIfNeeded($property, $namespace, $schemaLocation);
 				$dataClass       = $make->dataClass;
 				$propertyPhpType = $make->type ?: $property->type;
 				$finalType       = $propertyPhpType;
@@ -56,27 +60,5 @@ class SchemaObjectGenerator extends ObjectGenerator
 		}
 		
 		return parent::make();
-	}
-	
-	
-	/**
-	 * @param string|null      $type
-	 * @param Reference|Schema $schema
-	 * @param string           $propertyName
-	 * @param string           $schemaLocation
-	 *
-	 * @return \Infira\omg\generator\SchemaArrayGenerator|\Infira\omg\generator\SchemaBlankGenerator|\Infira\omg\generator\SchemaObjectGenerator
-	 */
-	private function getPropertyModelGenerator(string $type, $schema, string $propertyName, string $schemaLocation)
-	{
-		$propertyName = ucfirst($propertyName);
-		if (strpos($this->ns->get("./../property/%className%$propertyName"), 'property\property') !== false) {
-			$namespace = "../../property/%className%$propertyName";
-		}
-		else {
-			$namespace = "../property/%className%$propertyName";
-		}
-		
-		return $this->getGenerator($schema, $namespace, $schemaLocation, $type);
 	}
 }

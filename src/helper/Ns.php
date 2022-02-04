@@ -13,6 +13,10 @@ class Ns
 	 * @var string
 	 */
 	private $seperator;
+	/**
+	 * @var string
+	 */
+	private $classSuffix = '';
 	
 	public function __construct(string $rootPath = null, string $seperator = '\\')
 	{
@@ -83,7 +87,7 @@ class Ns
 			Omg::error('not allowed character in namespace:' . $final);
 		}
 		
-		return str_replace('%className%', $className, $final);
+		return str_replace('%className%', $className . $this->classSuffix, $final);
 	}
 	
 	private final function cdNs(string $ns): string
@@ -122,6 +126,11 @@ class Ns
 		return end($this->namespace);
 	}
 	
+	public function getFullClassName(): string
+	{
+		return end($this->namespace) . $this->classSuffix;
+	}
+	
 	public function getFullClassPath(string ...$parts): string
 	{
 		$ar        = explode('\\', $this->get(...$parts));
@@ -151,5 +160,10 @@ class Ns
 	public function get(string ...$parts): string
 	{
 		return $this->constructPath($this->namespace, ...$parts);
+	}
+	
+	public function setClassSuffix(string $suffix)
+	{
+		$this->classSuffix = $suffix;
 	}
 }

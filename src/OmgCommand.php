@@ -116,25 +116,25 @@ class OmgCommand extends \Infira\console\Command
 		
 		$this->makeOperation();
 		$this->makeLibResponse();
-		
-		/*
-		Generator::makeFile('lib/Response.php', Tpl::load('Response.php', [
-			'namespace' => 'namespace ' . $ns . ';',
-		]));
-		*/
-		
-		foreach ($this->api->components->schemas as $name => $schema) {
+		$this->makeComponentSchemas($this->api->components->schemas);
+		$this->makeComponentRequestBodies($this->api->components->requestBodies);
+		$this->makeComponentResponses($this->api->components->responses);
+		$this->makePathRegister($this->api->paths);
+	}
+	
+	/**
+	 * @param \cebe\openapi\spec\Schema[] $schemas
+	 * @return void
+	 */
+	private function makeComponentSchemas(array $schemas)
+	{
+		foreach ($schemas as $name => $schema) {
 			Omg::validateSchema($schema);
 			if (!Omg::isMakeable($schema->type)) {
 				continue;
 			}
-			$generator = Omg::getGenerator($schema, "/components/schema/$name", "#/components/schemas/$name", $schema->type);
-			$generator->make();
+			Omg::getGenerator($schema, "/components/schema/$name", "#/components/schemas/$name", $schema->type)->make();
 		}
-		
-		$this->makeComponentRequestBodies($this->api->components->requestBodies);
-		$this->makeComponentResponse($this->api->components->responses);
-		$this->makePathRegister($this->api->paths);
 	}
 	
 	/**
@@ -145,17 +145,15 @@ class OmgCommand extends \Infira\console\Command
 	private function makeComponentRequestBodies(array $requests)
 	{
 		foreach ($requests as $name => $request) {
-			$componentResponseGenerator = Omg::getGenerator($request->content[Omg::getContentType($request)]->schema, "/components/requestBodies/$name", "#/components/requestBodies/$name");
-			$componentResponseGenerator->make();
+			Omg::getGenerator($request->content[Omg::getContentType($request)]->schema, "/components/requestBodies/$name", "#/components/requestBodies/$name")->make();
 		}
-		
 	}
 	
 	/**
 	 * @param ResponseSepc[] $responses
 	 * @return void
 	 */
-	private function makeComponentResponse(array $responses)
+	private function makeComponentResponses(array $responses)
 	{
 		foreach ($responses as $name => $response) {
 			$generator = new ComponentResponse($name, $response);

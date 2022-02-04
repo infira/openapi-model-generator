@@ -26,6 +26,7 @@ class SchemaArrayGenerator extends ObjectGenerator
 			}
 			elseif ($schema->items instanceof Reference or ($schema instanceof Schema and ($schema->items->allOf or $schema->items->properties)) or Omg::isMakeable($schema->items->type)) {
 				$make = $this->makeIfNeeded($schema->items, '../arrayItem/%className%Item', 'items/item');
+				
 				$this->tpl->setArrayItemType($make->type, $make->dataClass, $schema->items);
 			}
 			elseif ($schema->items->type) {

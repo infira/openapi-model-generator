@@ -101,63 +101,104 @@ class Omg
 		}
 	}
 	
-	//TODO miks seda vaja on?
-	public static function isMakeable(string $type): bool
+	/**
+	 * @param string|Reference $ref
+	 * @return string
+	 */
+	public static function getRef($ref): string
 	{
-		if (!$type)
-		{
+		return is_object($ref) ? $ref->getReference() : $ref;
+	}
+	
+	/**
+	 * @param string|Reference $type
+	 * @return bool
+	 */
+	public static function isMakeable($type): bool
+	{
+		if (!$type) {
 			return false;
 		}
+		if (is_object($type))// and $type instanceof Reference)
+		{
+			$type = self::getType($type);
+		}
+		
 		return in_array($type, ['array', 'object']);
 	}
 	
-	public static function isComponentHeader(Reference $ref): bool
+	/**
+	 * @param string|Reference $ref
+	 * @return bool
+	 */
+	public static function isComponentHeader($ref): bool
 	{
-		return strpos($ref->getReference(), '#/components/headers/') !== false;
+		return strpos(self::getRef($ref), '#/components/headers/') !== false;
 	}
 	
-	public static function isComponentSchema(Reference $ref): bool
+	/**
+	 * @param string|Reference $ref
+	 * @return bool
+	 */
+	public static function isComponentSchema($ref): bool
 	{
-		return strpos($ref->getReference(), '#/components/schemas/') !== false;
+		return strpos(self::getRef($ref), '#/components/schemas/') !== false;
 	}
 	
-	public static function isComponentResponse(Reference $ref): bool
+	/**
+	 * @param string|Reference $ref
+	 * @return bool
+	 */
+	public static function isComponentResponse($ref): bool
 	{
-		return strpos($ref->getReference(), '#/components/responses/') !== false;
+		return strpos(self::getRef($ref), '#/components/responses/') !== false;
 	}
 	
-	public static function isComponentRequestBody(Reference $ref): bool
+	/**
+	 * @param string|Reference $ref
+	 * @return bool
+	 */
+	public static function isComponentRequestBody($ref): bool
 	{
-		return strpos($ref->getReference(), '#/components/requestBodies/') !== false;
+		return strpos(self::getRef($ref), '#/components/requestBodies/') !== false;
 	}
 	
-	public static function isMakeableReference(Reference $ref): bool
-	{
-		return self::isMakeable(self::getType($ref));
-	}
-	
-	public static function isComponent(Reference $ref): bool
+	/**
+	 * @param string|Reference $ref
+	 * @return bool
+	 */
+	public static function isComponent($ref): bool
 	{
 		return (self::isComponentResponse($ref) or self::isComponentSchema($ref) or self::isComponentRequestBody($ref));
 	}
 	
-	public static function getReferenceClassnameSuffix(Reference $ref): string
+	/**
+	 * @param string|Reference $ref
+	 * @return string
+	 */
+	public static function getClassnameSuffix($ref): string
 	{
-		if (self::isComponentResponse($ref)) {
+		if (preg_match('/^\#\/components\/responses\/\w+$/m', $ref)) {
 			return 'Response';
 		}
-		elseif (self::isComponentSchema($ref)) {
+		elseif (preg_match('/^\#\/components\/schemas\/\w+$/m', $ref)) {
 			return 'Schema';
 		}
-		elseif (self::isComponentRequestBody($ref)) {
+		elseif (preg_match('/^\#\/components\/requestBodies\/\w+$/m', $ref)) {
 			return 'RequestBody';
 		}
 		
 		return '';
 	}
 	
-	public static function getReferenceClassPath(Reference $ref): string
+	/**
+	 * @param string|Reference $ref
+	 * @throws \Exception
+	 * @return string
+	 */
+	public static function getReferenceClassPath($ref): string
 	{
+		$ref = self::getRef($ref);
 		if (self::isComponentResponse($ref)) {
 			$type = 'responses';
 		}
@@ -168,10 +209,10 @@ class Omg
 			$type = 'requestBodies';
 		}
 		else {
-			self::error('unknown reference');
+			self::error("unknown reference('$ref')");
 		}
 		
-		return '\\' . Utils::ns()->get('/components', $type, ucfirst(Utils::extractName($ref->getReference()) . self::getReferenceClassnameSuffix($ref)));
+		return '\\' . Utils::ns()->get('/components', $type, ucfirst(Utils::extractName(self::getRef($ref)) . self::getClassnameSuffix($ref)));
 	}
 	
 	public static function notImplementedYet()
