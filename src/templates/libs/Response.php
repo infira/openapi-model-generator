@@ -66,6 +66,7 @@ class Response extends Class__Construct
 		$set->setAbstract(true);
 		
 		$get = $this->createMethod('getContent');
+		$get->addReturnComment('Storage');
 		$get->setAbstract(true);
 	}
 	
