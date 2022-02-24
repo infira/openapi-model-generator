@@ -5,10 +5,12 @@ namespace Infira\omg;
 use Infira\Utils\File;
 use cebe\openapi\spec\Reference;
 use cebe\openapi\spec\Schema;
+use cebe\openapi\spec\Parameter;
 use Infira\omg\helper\Utils;
 use Nette\PhpGenerator\PhpFile;
 use Infira\omg\generator\{SchemaArrayGenerator, SchemaBlankGenerator, SchemaObjectGenerator};
 use Infira\omg\helper\Ns;
+use \Infira\omg\helper\ParametersSpec;
 
 abstract class Generator
 {
@@ -127,10 +129,10 @@ abstract class Generator
 	}
 	
 	/**
-	 * @param Reference|Schema $bodySchema
-	 * @param string           $namespace
-	 * @param string           $schemaLocation
-	 * @param string|null      $type if null it will be autodetect
+	 * @param Reference|Schema|ParametersSpec $bodySchema
+	 * @param string                          $namespace
+	 * @param string                          $schemaLocation
+	 * @param string|null                     $type if null it will be autodetect
 	 * @throws \Exception
 	 * @return SchemaArrayGenerator|SchemaBlankGenerator|SchemaObjectGenerator
 	 */

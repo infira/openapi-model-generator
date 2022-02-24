@@ -99,7 +99,9 @@ class OmgCommand extends \Infira\console\Command
 	 */
 	private function make()
 	{
-		Dir::flush(Config::$destination);
+		Dir::delete(Config::$destination . 'components');
+		Dir::delete(Config::$destination . 'libs');
+		Dir::delete(Config::$destination . 'path');
 		$ns = Omg::getLibPath();
 		Generator::makeFile('lib/RObject.php', Tpl::load('libs/RObject.php', [
 			'namespace' => 'namespace ' . $ns . ';',

@@ -9,6 +9,9 @@ use cebe\openapi\spec\Reference;
 use Infira\omg\generator\SchemaBlankGenerator;
 use Infira\omg\helper\Utils;
 use cebe\openapi\spec\Response;
+use cebe\openapi\spec\Parameter;
+use Infira\omg\generator\SchemaRequestParameterObjectGenerator;
+use \Infira\omg\helper\ParametersSpec;
 
 class Omg
 {
@@ -35,21 +38,24 @@ class Omg
 	}
 	
 	/**
-	 * @param Reference|Schema $bodySchema
-	 * @param string           $namespace
-	 * @param string           $schemaLocation
-	 * @param string|null      $type if null it will be autodetect
+	 * @param Reference|Schema|ParametersSpec $bodySchema
+	 * @param string                          $namespace
+	 * @param string                          $schemaLocation
+	 * @param string|null                     $type if null it will be autodetect
 	 * @throws \Exception
 	 * @return SchemaArrayGenerator|SchemaBlankGenerator|SchemaObjectGenerator
 	 */
 	public static function getGenerator($bodySchema, string $namespace, string $schemaLocation, string $type = null)
 	{
-		if ($bodySchema and !($bodySchema instanceof Reference) and !($bodySchema instanceof Schema)) {
+		if ($bodySchema and !($bodySchema instanceof Reference) and !($bodySchema instanceof Schema) and !($bodySchema instanceof ParametersSpec)) {
 			self::error('$bodySchema must be Reference or Schema ' . get_class($bodySchema) . ' was given');
 		}
 		$type = $type ?: self::getType($bodySchema);
 		
-		if ($type == 'object') {
+		if ($type == 'requestParameterObject') {
+			$generator = new SchemaRequestParameterObjectGenerator($namespace, $schemaLocation);
+		}
+		elseif ($type == 'object') {
 			$generator = new SchemaObjectGenerator($namespace, $schemaLocation);
 		}
 		elseif ($type == 'array') {
@@ -71,7 +77,6 @@ class Omg
 			$generator->tpl->setExtends(self::getReferenceClassPath($bodySchema));
 		}
 		elseif ($bodySchema !== null) {
-			self::validateSchema($bodySchema);
 			$generator->setSchema($bodySchema);
 		}
 		
@@ -251,7 +256,7 @@ class Omg
 	}
 	
 	/**
-	 * @param Reference|Response|Schema $resource
+	 * @param Reference|Response|Schema|ParametersSpec $resource
 	 * @throws \cebe\openapi\exceptions\UnresolvableReferenceException
 	 * @return string
 	 */
@@ -259,6 +264,9 @@ class Omg
 	{
 		if ($resource instanceof Reference) {
 			return self::getType($resource->resolve());
+		}
+		elseif ($resource instanceof ParametersSpec) {
+			return 'requestParameterObject';
 		}
 		elseif ($resource instanceof Schema) {
 			if (isset($resource->type)) {

@@ -7,6 +7,7 @@ use cebe\openapi\spec\Schema;
 use Infira\omg\Omg;
 use Infira\omg\helper\Utils;
 use Infira\omg\templates\SchemaModel;
+use Infira\omg\helper\ParametersSpec;
 
 /**
  * @property-read SchemaModel $tpl
@@ -23,8 +24,13 @@ abstract class ObjectGenerator extends Generator
 		$this->extendableLib = $lib;
 	}
 	
-	public function setSchema(?Schema $schema)
+	/**
+	 * @param Schema|null $schema
+	 * @return void
+	 */
+	public function setSchema($schema)
 	{
+		Omg::validateSchema($schema);
 		$this->schema = $schema;
 	}
 	
@@ -36,7 +42,7 @@ abstract class ObjectGenerator extends Generator
 		if (!$this->tpl->getExtends() and $this->extendableLib) {
 			$this->tpl->extendLib($this->extendableLib);
 		}
-		if ($this->schema) {
+		if ($this->schema and (!$this->schema instanceof ParametersSpec)) {
 			if ($this->schema->nullable) {
 				$this->tpl->addConstructorLine('$this->nullable = true;');
 			}

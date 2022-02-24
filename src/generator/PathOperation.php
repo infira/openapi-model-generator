@@ -10,6 +10,7 @@ use Infira\omg\Omg;
 use cebe\openapi\spec\Schema;
 use Infira\omg\Generator;
 use Infira\omg\helper\Utils;
+use Infira\omg\helper\ParametersSpec;
 
 /**
  * @property-read \Infira\omg\templates\PathOperation $tpl
@@ -222,6 +223,26 @@ class PathOperation extends Generator
 	public function make()
 	{
 		//parse requests
+		if ($this->operation->parameters) {
+			foreach ($this->operation->parameters as $parameter) {
+				if ($parameter instanceof Reference) {
+					//Omg::notImplementedYet();
+					//debug($this->path, $parameter->getSerializableData());
+				}
+				else {
+				}
+			}
+			
+			$generator = $this->getGenerator(new ParametersSpec($this->operation->parameters), '../body/%className%RequestParameters', "requestParameters");
+			$generator->tpl->addConstructorLine('$this->fillNonExistingWithDefaultValues = true;');
+			$generator->make();
+			$requestClass = $generator->getFullClassPath();
+			
+			$requestClassAlias = 'RequestParameters';
+			$this->tpl->import($requestClass, $requestClassAlias);
+			$this->tpl->addConstructorLine('$this->%s = new %s(\'%s\');', Config::$operationRequestParametersParameterName, $requestClassAlias, $this->path);
+			$prop = $this->tpl->addPropertyType(Config::$operationRequestParametersParameterName, $requestClass);
+		}
 		if ($this->operation->requestBody) {
 			if ($this->operation->requestBody instanceof Reference) {
 				$description  = $this->operation->requestBody->resolve()->descrtipion ?? '';

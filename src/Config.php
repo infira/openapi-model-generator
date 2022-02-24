@@ -6,19 +6,20 @@ class Config
 {
 	private static $_isLoaded = false;
 	
-	public static $mandatoryResponseProperties = false;
-	public static $spec                        = '';
-	public static $destination                 = '';
-	public static $rootNamespace               = '';
-	public static $pathNamespaceTemplate       = '{path[0]}/{method}/{operationID?generateName(path[1:*])}';
-	public static $operationInputParameterName = 'rb';
-	public static $laravel                     = false;
-	public static $nullableDefaultNull         = true;//when object or property has nullable and default is not defined then handle default as null
-	public static $phpVersion                  = 7.3;
-	public static $httpStatusNameMap           = [];
-	public static $operationClass              = null;
-	public static $operationTraits             = [];
-	public static $operationImplements         = [];
+	public static $mandatoryResponseProperties             = false;
+	public static $spec                                    = '';
+	public static $destination                             = '';
+	public static $rootNamespace                           = '';
+	public static $pathNamespaceTemplate                   = '{path[0]}/{method}/{operationID?generateName(path[1:*])}';
+	public static $operationInputParameterName             = 'rb';
+	public static $operationRequestParametersParameterName = 'requestParameters';
+	public static $laravel                                 = false;
+	public static $nullableDefaultNull                     = true;//when object or property has nullable and default is not defined then handle default as null
+	public static $phpVersion                              = 7.3;
+	public static $httpStatusNameMap                       = [];
+	public static $operationClass                          = null;
+	public static $operationTraits                         = [];
+	public static $operationImplements                     = [];
 	
 	public static function load(array $config)
 	{
