@@ -6,7 +6,7 @@ use cebe\openapi\Reader;
 use Symfony\Component\Yaml\Yaml;
 use Infira\omg\helper\Tpl;
 use Infira\omg\generator\ComponentRequestBody;
-use Infira\Utils\Dir;
+use Wolo\File\Folder;
 use Symfony\Component\Console\Input\InputArgument;
 use Nette\PhpGenerator\PhpFile;
 use Infira\omg\templates\libs\Operation;
@@ -15,6 +15,8 @@ use Infira\omg\generator\PathRegister;
 use Infira\omg\templates\libs\Response;
 use Infira\omg\generator\ComponentResponse;
 use Infira\omg\helper\Utils;
+use Illuminate\Support\Str;
+use Wolo\File\Path;
 
 class OmgCommand extends \Infira\console\Command
 {
@@ -99,9 +101,9 @@ class OmgCommand extends \Infira\console\Command
 	 */
 	private function make()
 	{
-		Dir::delete(Config::$destination . 'components');
-		Dir::delete(Config::$destination . 'libs');
-		Dir::delete(Config::$destination . 'path');
+		Folder::delete(Path::join(Config::$destination, 'components'));
+		Folder::delete(Path::join(Config::$destination, 'lib'));
+		Folder::delete(Path::join(Config::$destination, 'path'));
 		$ns = Omg::getLibPath();
 		Generator::makeFile('lib/RObject.php', Tpl::load('libs/RObject.php', [
 			'namespace' => 'namespace ' . $ns . ';',
@@ -110,7 +112,6 @@ class OmgCommand extends \Infira\console\Command
 		Generator::makeFile('lib/RArray.php', Tpl::load('libs/RArray.php', [
 			'namespace' => 'namespace ' . $ns . ';',
 		]));
-		
 		Generator::makeFile('lib/Storage.php', Tpl::load('libs/Storage.php', [
 			'rootNamespace' => $ns,
 			'namespace'     => 'namespace ' . $ns . ';',

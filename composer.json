@@ -18,9 +18,11 @@
 	"bin/omg"
   ],
   "require": {
+	"php": ">=8.0",
 	"infira/console": "*",
-	"cebe/php-openapi": "1.5.x-dev",
+	"cebe/php-openapi": "1.5.*",
 	"guzzlehttp/psr7": "2.*",
-	"nette/php-generator": "v3.6.x-dev"
+	"nette/php-generator": "v3.6.x-dev",
+	"infira/wolo": "dev-main"
   }
 }

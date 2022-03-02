@@ -2,7 +2,7 @@
 
 namespace Infira\omg;
 
-use Infira\Utils\File;
+use Wolo\File\File;
 use cebe\openapi\spec\Reference;
 use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Parameter;
@@ -87,7 +87,7 @@ abstract class Generator
 			mkdir(dirname($file), 0777, true);
 		}
 		
-		File::create($file, $src);
+		File::put($file, $src);
 		
 		return $file;
 	}

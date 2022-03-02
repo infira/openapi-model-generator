@@ -24,7 +24,7 @@ class Ns
 		$this->seperator = $seperator;
 	}
 	
-	private final function constructPath(array $currentPath, string ...$parts): string
+	private function constructPath(array $currentPath, string ...$parts): string
 	{
 		if (!$parts) {
 			$parts = [''];
@@ -90,7 +90,7 @@ class Ns
 		return str_replace('%className%', $className . $this->classSuffix, $final);
 	}
 	
-	private final function cdNs(string $ns): string
+	private function cdNs(string $ns): string
 	{
 		$cdPos   = strpos($ns, '[_CD_]');
 		$afterCd = substr($ns, $cdPos + 6);
