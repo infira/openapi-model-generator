@@ -18,7 +18,7 @@ class Tpl
 		$src = File::content($tpl);
 		$src = preg_replace('/\/\/(%\w+\%)/m', '$1', $src);
 		
-		$res = Str::vars($src, $variables);
+		$res = Str::vars($src, $variables,'%%');
 		foreach ($replaces as $from => $to) {
 			$res = str_replace($from, $to, $res);
 		}
