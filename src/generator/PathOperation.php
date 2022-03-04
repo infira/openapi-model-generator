@@ -224,15 +224,6 @@ class PathOperation extends Generator
 	{
 		//parse requests
 		if ($this->operation->parameters) {
-			foreach ($this->operation->parameters as $parameter) {
-				if ($parameter instanceof Reference) {
-					//Omg::notImplementedYet();
-					//debug($this->path, $parameter->getSerializableData());
-				}
-				else {
-				}
-			}
-			
 			$generator = $this->getGenerator(new ParametersSpec($this->operation->parameters), '../body/%className%RequestParameters', "requestParameters");
 			$generator->tpl->addConstructorLine('$this->fillNonExistingWithDefaultValues = true;');
 			$generator->make();

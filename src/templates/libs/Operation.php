@@ -34,6 +34,7 @@ class Operation extends ClassTemplate
 	{
 		$this->createConstruct();
 		$this->createHasRequestBody();
+		$this->createHasRequestParameters();
 		$this->createGetOperationID();
 		$this->createIs();
 		$this->createGetMethod();
@@ -157,6 +158,13 @@ return new $class($fill);');
 		$method = $this->createMethod('hasRequestBody');
 		$method->setFinal(true)->setReturnType('bool');
 		$method->addBodyLine('return isset($this->input)');
+	}
+	
+	private function createHasRequestParameters()
+	{
+		$method = $this->createMethod('hasRequestParameters');
+		$method->setFinal(true)->setReturnType('bool');
+		$method->addBodyLine('return isset($this->requestParameters)');
 	}
 	
 	private function createPathResponse()
