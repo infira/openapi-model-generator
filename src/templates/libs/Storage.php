@@ -305,6 +305,21 @@ abstract class Storage
 	
 	public function exists($key): bool { return $this->storage->offsetExists($key); }
 	
+	public function has($key): bool { return $this->storage->offsetExists($key); }
+	
+	public function hasNot($key): bool { return !$this->has($key); }
+	
+	public function empty($key): bool
+	{
+		if (!$this->has($key)) {
+			return false;
+		}
+		
+		return empty($this->get($key));
+	}
+	
+	public function notEmpty($key): bool { return !$this->empty($key); }
+	
 	public function unset($key): self
 	{
 		$this->storage->offsetUnset($key);
