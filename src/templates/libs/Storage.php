@@ -312,7 +312,7 @@ abstract class Storage
 	public function empty($key): bool
 	{
 		if (!$this->has($key)) {
-			return false;
+			return true;
 		}
 		
 		return empty($this->get($key));
