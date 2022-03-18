@@ -109,6 +109,4 @@ return new $class($fill);');
 		$get = $this->createMethod('getContentType')->setReturnType('?string');
 		$get->addBodyLine('return $this->getHeader(\'Content-Type\')');
 	}
-	
-	public function beforeFinalize() {}
 }

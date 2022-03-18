@@ -189,7 +189,12 @@ $response->setStatus($status);
 return $response;');
 	}
 	
-	public function beforeFinalize() {}
-	
+	public function finalize()
+	{
+		parent::finalize();
+		$this->class->addComment('');
+		$this->class->addComment('@property Storage $input');
+		$this->class->addComment('@property Storage $requestParameters');
+	}
 	
 }

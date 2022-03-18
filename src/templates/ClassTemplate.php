@@ -55,7 +55,6 @@ class ClassTemplate extends Magics
 	
 	public function finalize()
 	{
-		$this->beforeFinalize();
 		array_walk($this->methods, function (&$method)
 		{
 			$method = $method->construct();
@@ -155,6 +154,4 @@ class ClassTemplate extends Magics
 		$description = $description ?? '';
 		$this->addComment('@method %s %s(%s) %s', $returnType, $name, $params, $description);
 	}
-	
-	public function beforeFinalize() {}
 }

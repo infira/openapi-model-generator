@@ -29,7 +29,7 @@ class Register extends ClassTemplate
 		$this->paths[$path][$method] = $class;
 	}
 	
-	public function beforeFinalize()
+	public function finalize()
 	{
 		$this->pathsProp->setValue($this->paths);
 		if (Config::$phpVersion > 7.3) {
@@ -83,5 +83,7 @@ foreach (self::$paths as $path => $methods) {
 }
 
 return $classes;');
+		
+		parent::finalize();
 	}
 }

@@ -23,6 +23,4 @@ class Class__Construct extends ClassTemplate
 	{
 		$this->constructor->addBodyLine(vsprintf($format, $values));
 	}
-	
-	public function beforeFinalize() {}
 }
