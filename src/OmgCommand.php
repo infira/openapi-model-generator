@@ -3,19 +3,18 @@
 namespace Infira\omg;
 
 use cebe\openapi\Reader;
-use Symfony\Component\Yaml\Yaml;
-use Infira\omg\helper\Tpl;
+use cebe\openapi\spec\{OpenApi, Paths, Reference, RequestBody, Response as ResponseSepc};
 use Infira\omg\generator\ComponentRequestBody;
-use Wolo\File\Folder;
-use Symfony\Component\Console\Input\InputArgument;
-use Nette\PhpGenerator\PhpFile;
-use Infira\omg\templates\libs\Operation;
-use cebe\openapi\spec\{Paths, Reference, Response as ResponseSepc, RequestBody, OpenApi};
-use Infira\omg\generator\PathRegister;
-use Infira\omg\templates\libs\Response;
 use Infira\omg\generator\ComponentResponse;
+use Infira\omg\generator\PathRegister;
+use Infira\omg\helper\Tpl;
 use Infira\omg\helper\Utils;
-use Illuminate\Support\Str;
+use Infira\omg\templates\libs\Operation;
+use Infira\omg\templates\libs\Response;
+use Nette\PhpGenerator\PhpFile;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Yaml\Yaml;
+use Wolo\File\Folder;
 use Wolo\File\Path;
 
 class OmgCommand extends \Infira\console\Command
@@ -42,12 +41,12 @@ class OmgCommand extends \Infira\console\Command
 	{
 		$configFile = $this->input->getArgument('config');
 		if (!is_file($configFile)) {
-			$this->error('Config file does not exists');
+			Omg::error('Config file does not exists');
 		}
 		$path = pathinfo($configFile);
 		
 		if ($path['extension'] != 'yaml') {
-			$this->error('Config file must be in yaml');
+			Omg::error('Config file must be in yaml');
 		}
 		Config::load(Yaml::parseFile($configFile));
 		
@@ -62,8 +61,9 @@ class OmgCommand extends \Infira\console\Command
 			$file = Config::$spec;
 		}
 		if (!is_file($file)) {
-			$this->error('API file does not exists');
+			Omg::error("API file('$file') does not exists");
 		}
+		$file = realpath($file);
 		$path = pathinfo($file);
 		
 		switch (strtolower($path['extension'])) {
@@ -76,7 +76,7 @@ class OmgCommand extends \Infira\console\Command
 			break;
 			
 			default:
-				$this->error('Unsupported API file');
+				Omg::error('Unsupported API file');
 			break;
 		}
 	}
@@ -84,10 +84,10 @@ class OmgCommand extends \Infira\console\Command
 	private function validateAPI()
 	{
 		if (!$this->api) {
-			$this->error('API spec is not loaded');
+			Omg::error('API spec is not loaded');
 		}
 		if (!Config::isLoaded()) {
-			$this->error('Config is not loaded');
+			Omg::error('Config is not loaded');
 		}
 		$this->api->validate();
 		$this->output->region('Specs validation warnings/errors', function ()

@@ -17,6 +17,5 @@ Bin::init(realpath(__DIR__));
  */
 Bin::run('infira-openapi-model-generator', function (&$app, ConsoleOutput $output)
 {
-	\Infira\omg\Omg::$console = $output;
 	$app->add(new \Infira\omg\OmgCommand());
 });

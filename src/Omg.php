@@ -2,16 +2,16 @@
 
 namespace Infira\omg;
 
-use cebe\openapi\spec\Schema;
-use Infira\omg\generator\SchemaObjectGenerator;
-use Infira\omg\generator\SchemaArrayGenerator;
 use cebe\openapi\spec\Reference;
-use Infira\omg\generator\SchemaBlankGenerator;
-use Infira\omg\helper\Utils;
 use cebe\openapi\spec\Response;
-use cebe\openapi\spec\Parameter;
+use cebe\openapi\spec\Schema;
+use Infira\console\Console;
+use Infira\omg\generator\SchemaArrayGenerator;
+use Infira\omg\generator\SchemaBlankGenerator;
+use Infira\omg\generator\SchemaObjectGenerator;
 use Infira\omg\generator\SchemaRequestParameterObjectGenerator;
-use \Infira\omg\helper\ParametersSpec;
+use Infira\omg\helper\ParametersSpec;
+use Infira\omg\helper\Utils;
 
 class Omg
 {
@@ -299,16 +299,16 @@ class Omg
 		if ($extraData) {
 			addExtraErrorInfo($extraData);
 		}
-		throw new \Exception($msg);
+		Console::error($msg, $extraData);
 	}
 	
 	public static function debug(...$data)
 	{
-		self::$console->debug(...$data);
+		Console::debug(...$data);
 	}
 	
 	public static function trace(string $regionTitle = 'omg trace')
 	{
-		self::$console->traceRegion($regionTitle, debug_backtrace());
+		Console::traceRegion($regionTitle, debug_backtrace());
 	}
 }

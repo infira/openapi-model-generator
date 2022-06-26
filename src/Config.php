@@ -2,6 +2,8 @@
 
 namespace Infira\omg;
 
+use Wolo\File\Path;
+
 class Config
 {
 	private static $_isLoaded = false;
@@ -30,6 +32,13 @@ class Config
 			$type = gettype(self::$$name);
 			if ($type == 'boolean') {
 				$value = (bool)$value;
+			}
+			
+			if ($name == 'destination') {
+				$value = Path::slash(realpath($value));
+				if (!is_dir($value)) {
+					Omg::error("Destination path('$value') is not correct folder");
+				}
 			}
 			self::$$name = $value;
 		}
