@@ -69,7 +69,7 @@ class Operation extends ClassTemplate
 }
 $body = null;
 if ($this->activeResponse->getContentType() == \'application/json\') {
-	$body = json_encode($this->activeResponse->getContent()->getData(true));
+	$body = json_encode($this->activeResponse->getContent()->getData(true),512, JSON_THROW_ON_ERROR);
 }
 else {
 	$this->tError(\'Content type no implemented\');
