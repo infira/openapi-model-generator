@@ -310,8 +310,7 @@ class PathOperation extends Generator
 			$this->parseResponse($httpCode, $resource->resolve(), $responseClass);
 		}
 		elseif ($resource instanceof Reference) {
-			addExtraErrorInfo('class', $resource->getReference());
-			Omg::notImplementedYet();
+			Omg::notImplementedYet(['class' => $resource->getReference()]);
 		}
 		elseif ($resource instanceof Response and $parentResponseClass) {
 			$contentType = Omg::getContentType($resource);

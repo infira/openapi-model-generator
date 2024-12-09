@@ -4,7 +4,7 @@ namespace Infira\omg\generator;
 
 use cebe\openapi\spec\Schema;
 use cebe\openapi\spec\Reference;
-use Infira\console\helper\Utils;
+use Infira\omg\helper\Utils;
 use Infira\omg\Omg;
 
 class SchemaObjectGenerator extends ObjectGenerator

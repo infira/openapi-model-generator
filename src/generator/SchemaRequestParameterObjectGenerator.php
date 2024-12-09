@@ -2,11 +2,7 @@
 
 namespace Infira\omg\generator;
 
-use cebe\openapi\spec\Schema;
-use cebe\openapi\spec\Parameter;
 use cebe\openapi\spec\Reference;
-use Infira\console\helper\Utils;
-use Infira\omg\Omg;
 use Infira\omg\helper\ParametersSpec;
 
 /**
